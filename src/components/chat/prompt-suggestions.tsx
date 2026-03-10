@@ -19,12 +19,12 @@ export const PromptSuggestions: React.FC<PromptSuggestionsProps> = ({
     ];
 
     // Specific prompts based on subject
-    if (subjectName?.toLowerCase().includes("programming") || subjectName?.toLowerCase().includes("lập trình")) {
+    if (subjectName?.toLowerCase().includes("python") || subjectName?.toLowerCase().includes("programming") || subjectName?.toLowerCase().includes("lập trình")) {
         prompts = [
-            { title: "Biến (variable) là gì?", hint: "Cơ bản", icon: Code, color: "text-blue-500", bg: "bg-blue-50" },
-            { title: "Giải thích vòng lặp For", hint: "Cơ bản", icon: Code, color: "text-blue-500", bg: "bg-blue-50" },
-            { title: "Hàm (function) hoạt động thế nào?", hint: "Trung bình", icon: Code, color: "text-blue-500", bg: "bg-blue-50" },
-            { title: "Lỗi bug là gì và cách sửa chữa?", hint: "Gỡ lỗi", icon: Code, color: "text-blue-500", bg: "bg-blue-50" },
+            { title: "Kiểu dữ liệu trong Python là gì?", hint: "Python cơ bản", icon: Code, color: "text-blue-500", bg: "bg-blue-50" },
+            { title: "Giải thích vòng lặp for và while trong Python", hint: "Python cơ bản", icon: Code, color: "text-blue-500", bg: "bg-blue-50" },
+            { title: "Hàm (def) trong Python hoạt động thế nào?", hint: "Trung bình", icon: Code, color: "text-blue-500", bg: "bg-blue-50" },
+            { title: "List, tuple và dictionary khác nhau thế nào?", hint: "Python cơ bản", icon: Code, color: "text-blue-500", bg: "bg-blue-50" },
         ];
     } else if (subjectName?.toLowerCase().includes("game")) {
         prompts = [

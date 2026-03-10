@@ -1,5 +1,6 @@
 import { Chat, Subject } from "@/store/chat-store";
-import { Library, MessageCircle, MessageSquarePlus, Trash2 } from "lucide-react";
+import { HelpCircle, Library, MessageCircle, MessageSquarePlus, Trash2 } from "lucide-react";
+import { useNextStep } from "nextstepjs";
 import React from "react";
 
 interface ChatSidebarProps {
@@ -29,6 +30,8 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
     setIsOpen,
     onOpenSettings,
 }) => {
+    const { startNextStep } = useNextStep();
+
     return (
         <>
             {/* Mobile overlay */}
@@ -139,9 +142,20 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                     )}
                 </div>
 
-                {/* Settings Button */}
-                <div className="p-4 border-t border-gray-200 mt-auto">
+                {/* Bottom Actions (Hướng dẫn + Settings) */}
+                <div className="p-4 border-t border-gray-200 mt-auto flex flex-col gap-1">
                     <button
+                        onClick={() => startNextStep('mainTour')}
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50/80 rounded-xl transition-colors"
+                    >
+                        <div className="bg-white p-1.5 rounded-lg shadow-sm text-blue-500">
+                            <HelpCircle size={18} />
+                        </div>
+                        Hướng dẫn sử dụng
+                    </button>
+
+                    <button
+                        id="tour-settings-button"
                         onClick={onOpenSettings}
                         className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100/80 rounded-xl transition-colors"
                     >

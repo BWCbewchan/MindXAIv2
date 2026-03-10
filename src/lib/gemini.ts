@@ -140,11 +140,15 @@ export async function* streamFromGemini(
         // Log failure
         await logUsage(apiKey.id, responseTimeMs, 0, "error", errorMsg);
 
-        // If quota exceeded or auth error, deactivate key and retry with next
+        // If quota exceeded, auth error (403 leaked key), or permission error → deactivate key and retry
         if (
             errorMsg.includes("429") ||
             errorMsg.includes("quota") ||
-            errorMsg.includes("RESOURCE_EXHAUSTED")
+            errorMsg.includes("RESOURCE_EXHAUSTED") ||
+            errorMsg.includes("403") ||
+            errorMsg.includes("Forbidden") ||
+            errorMsg.includes("leaked") ||
+            errorMsg.includes("API_KEY_INVALID")
         ) {
             await supabase
                 .from("api_keys")

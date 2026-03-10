@@ -4,42 +4,48 @@ import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism";
 import remarkGfm from "remark-gfm";
+import { PythonRunner } from "./python-runner";
 import { SandboxViewer } from "./sandbox-viewer";
 
 interface MarkdownRendererProps {
     content: string;
 }
 
-const parseContent = (text: string) => {
-    const parts = [];
-    // Match <project>...</project> or <project>...$ (for streaming)
-    const projectRegex = /<project>([\s\S]*?)(?:<\/project>|$)/g;
+type ContentPart =
+    | { type: "markdown"; content: string }
+    | { type: "sandbox"; files: Record<string, string> }
+    | { type: "python"; code: string; stdin?: string };
+
+const parseContent = (text: string): ContentPart[] => {
+    const parts: ContentPart[] = [];
+    // Match <project>, <python> (with optional trailing <stdin>) blocks
+    const blockRegex = /(<project>[\s\S]*?(?:<\/project>|$))|(<python>([\s\S]*?)(?:<\/python>|$)\s*(?:<stdin>([\s\S]*?)(?:<\/stdin>|$))?)/g;
     let lastIndex = 0;
     let match;
 
-    while ((match = projectRegex.exec(text)) !== null) {
+    while ((match = blockRegex.exec(text)) !== null) {
         if (match.index > lastIndex) {
             parts.push({ type: "markdown", content: text.slice(lastIndex, match.index) });
         }
 
-        const projectContent = match[1];
-        const files: Record<string, string> = {};
-        // Match <file name="...">...</file> or <file name="...">...$ (for streaming)
-        const fileRegex = /<file name="([^"]+)">([\s\S]*?)(?:<\/file>|$)/g;
-        let fileMatch;
-        let fileFound = false;
-
-        while ((fileMatch = fileRegex.exec(projectContent)) !== null) {
-            fileFound = true;
-            // Provide a default file name if missing, though our prompt specifies it
-            const fileName = fileMatch[1] || "/App.js";
-            files[fileName] = fileMatch[2];
+        if (match[1] !== undefined) {
+            // <project> block
+            const projectContent = match[1].replace(/^<project>/, "").replace(/<\/project>$/, "");
+            const files: Record<string, string> = {};
+            const fileRegex = /<file name="([^"]+)">([\s\S]*?)(?:<\/file>|$)/g;
+            let fileMatch;
+            while ((fileMatch = fileRegex.exec(projectContent)) !== null) {
+                let rawName = fileMatch[1] || "index.html";
+                const fileName = rawName.startsWith("/") ? rawName : `/${rawName}`;
+                files[fileName] = fileMatch[2] ?? "";
+            }
+            parts.push({ type: "sandbox", files });
+        } else if (match[2] !== undefined) {
+            // <python> block (+ optional <stdin>)
+            parts.push({ type: "python", code: (match[3] ?? "").trim(), stdin: match[4] ? match[4].trim() : undefined });
         }
 
-        // If no files matched yet but we are inside a project (e.g. streaming just started), 
-        // we can still render an empty SandboxViewer or skip
-        parts.push({ type: "sandbox", files });
-        lastIndex = projectRegex.lastIndex;
+        lastIndex = blockRegex.lastIndex;
     }
 
     if (lastIndex < text.length) {
@@ -55,10 +61,14 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
     return (
         <div className="w-full">
             {parts.map((part, index) => {
+                if (part.type === "python") {
+                    return <PythonRunner key={index} initialCode={part.code} initialStdin={part.stdin} />;
+                }
+
                 if (part.type === "sandbox") {
-                    // Only render sandbox if it has files
-                    return Object.keys(part.files).length > 0 ? (
-                        <SandboxViewer key={index} files={part.files} />
+                    const sandboxFiles = part.files;
+                    return Object.keys(sandboxFiles).length > 0 ? (
+                        <SandboxViewer key={index} files={sandboxFiles} />
                     ) : (
                         <div key={index} className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 text-sm animate-pulse flex items-center gap-2">
                             <div className="w-4 h-4 rounded-full border-2 border-blue-400 border-t-transparent animate-spin"></div>
@@ -67,6 +77,8 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
                     );
                 }
 
+                // markdown part
+                const mdContent = part.content;
                 return (
                     <div key={index} className="prose prose-p:text-gray-700 prose-headings:font-display prose-headings:font-bold prose-headings:text-gray-900 prose-a:text-blue-600 hover:prose-a:text-blue-700 prose-img:rounded-xl max-w-none break-words text-[15px] leading-[1.75] w-full">
                         <ReactMarkdown
@@ -123,7 +135,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
                                 td: ({ children }) => <td className="px-5 py-3 whitespace-nowrap text-sm text-gray-700">{children}</td>,
                             }}
                         >
-                            {part.content}
+                            {mdContent}
                         </ReactMarkdown>
                     </div>
                 );

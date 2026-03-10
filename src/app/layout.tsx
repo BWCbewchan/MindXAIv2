@@ -1,3 +1,4 @@
+import { TourProvider } from "@/components/providers/tour-provider";
 import type { Metadata } from "next";
 import { Nunito } from "next/font/google";
 import "./globals.css";
@@ -23,7 +24,9 @@ export default function RootLayout({
     return (
         <html lang="vi">
             <body className={`${nunito.variable} antialiased`}>
-                {children}
+                <TourProvider>
+                    {children}
+                </TourProvider>
             </body>
         </html>
     );

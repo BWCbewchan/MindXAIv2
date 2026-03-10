@@ -15,7 +15,7 @@ export const SubjectSelector: React.FC<SubjectSelectorProps> = ({
     // Map icons
     const getIcon = (name: string, colorClass: string) => {
         const props = { size: 24, className: colorClass };
-        if (name.toLowerCase().includes("programming") || name.toLowerCase().includes("lập trình")) return <Code {...props} />;
+        if (name.toLowerCase().includes("python") || name.toLowerCase().includes("programming") || name.toLowerCase().includes("lập trình")) return <Code {...props} />;
         if (name.toLowerCase().includes("game")) return <Gamepad2 {...props} />;
         if (name.toLowerCase().includes("web")) return <Globe {...props} />;
         if (name.toLowerCase().includes("computer") || name.toLowerCase().includes("khoa học máy tính")) return <Sparkles {...props} />;

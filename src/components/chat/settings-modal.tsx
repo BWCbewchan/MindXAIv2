@@ -1,6 +1,6 @@
 import { useChatStore } from "@/store/chat-store";
 import { ChevronDown, X } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 interface SettingsModalProps {
     isOpen: boolean;
@@ -38,6 +38,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     const handleToggle = (key: keyof typeof toggles) => {
         setToggles(prev => ({ ...prev, [key]: !prev[key] }));
     };
+
+    // ESC key closes the modal
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useEffect(() => {
+        if (!isOpen) return;
+        const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    }, [isOpen, onClose]);
 
     if (!isOpen) return null;
 

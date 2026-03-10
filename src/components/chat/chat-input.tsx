@@ -1,6 +1,7 @@
 import { useChatStore } from "@/store/chat-store";
-import { Code, File as FileIcon, ImageIcon, Mic, Paperclip, Send, X } from "lucide-react";
+import { Code, File as FileIcon, ImageIcon, Paperclip, Send, X } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
+import { VoiceInput } from "./voice-input";
 
 interface ChatInputProps {
     onSendMessage: (message: string) => void;
@@ -89,7 +90,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     };
 
     return (
-        <div className="p-4 bg-white border-t border-gray-100 shadow-[0_-10px_40px_rgba(0,0,0,0.03)] z-10 relative">
+        <div className="p-4 z-10 relative bg-transparent">
             <div
                 className="mx-auto transition-all duration-300"
                 style={{ width: `${chatWidth}%` }}
@@ -117,6 +118,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 )}
 
                 <form
+                    id="tour-chat-input"
                     onSubmit={handleSubmit}
                     className="relative flex items-end gap-2 bg-gray-50 border border-gray-200 rounded-3xl p-2 transition-all focus-within:bg-white focus-within:border-blue-300 focus-within:shadow-[0_0_0_4px_rgba(108,155,210,0.1)]"
                 >
@@ -170,6 +172,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
                     <div className="flex items-center gap-1 pb-1.5 pr-1">
                         <button
+                            id="tour-live-editor-toggle"
                             type="button"
                             onClick={() => setEditorMode(!isEditorMode)}
                             className={`p-2 rounded-full transition-colors flex-shrink-0 ${isEditorMode ? "text-emerald-500 bg-emerald-50" : "text-gray-400 hover:text-emerald-500 hover:bg-emerald-50"}`}
@@ -177,13 +180,18 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                         >
                             <Code size={20} />
                         </button>
-                        <button
-                            type="button"
-                            className="p-2 text-gray-400 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-colors flex-shrink-0"
-                            title="Nhập bằng giọng nói"
-                        >
-                            <Mic size={20} />
-                        </button>
+
+                        <VoiceInput
+                            onTranscript={(text) => {
+                                setMessage(prev => {
+                                    const newText = prev ? prev + " " + text : text;
+                                    return newText;
+                                });
+                                // Tự động focus lại vào input sau khi nhận diện xong
+                                setTimeout(() => textareaRef.current?.focus(), 100);
+                            }}
+                            disabled={isLoading}
+                        />
                         <button
                             type="submit"
                             disabled={(!message.trim() && attachments.length === 0) || isLoading}
@@ -196,9 +204,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                         </button>
                     </div>
                 </form>
-                <div className="text-center mt-2 text-xs text-gray-400">
-                    Nhấn Enter để gửi, Shift + Enter để xuống dòng
-                </div>
             </div>
         </div>
     );

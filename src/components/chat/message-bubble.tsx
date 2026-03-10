@@ -2,17 +2,23 @@ import { Message } from "@/store/chat-store";
 import { Bot, User } from "lucide-react";
 import React from "react";
 import { MarkdownRenderer } from "./markdown-renderer";
+import { useTypewriter } from "./use-typewriter";
 
 interface MessageBubbleProps {
     message: Message;
     isTyping?: boolean;
+    animate?: boolean; // Cờ kiểm soát xem có chạy hiệu ứng gốc không
 }
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({
     message,
     isTyping = false,
+    animate = false,
 }) => {
     const isUser = message.role === "user";
+
+    // Gắn hook typewriter cho tin nhắn hiện tại
+    const { displayedText } = useTypewriter(message.content, 15, animate && !isUser);
 
     return (
         <div className={`flex w-full mb-6 ${isUser ? "justify-end" : "justify-start"}`}>
@@ -45,7 +51,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                                 {isUser ? (
                                     <div className="whitespace-pre-wrap font-medium">{message.content}</div>
                                 ) : (
-                                    <MarkdownRenderer content={message.content} />
+                                    <div className={`transition-opacity duration-300 ${displayedText ? 'opacity-100' : 'opacity-0'}`}>
+                                        <MarkdownRenderer content={displayedText} />
+                                    </div>
                                 )}
                             </>
                         )}
