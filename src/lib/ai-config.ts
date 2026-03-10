@@ -135,20 +135,118 @@ Khi người dùng yêu cầu viết code Python, bạn PHẢI bọc toàn bộ 
 
 ━━━ CẤU TRÚC TRẢ LỜI CHUẨN ━━━
 1. Giải thích ngắn ý tưởng/thuật toán (1-3 câu)
-2. Thẻ <python> chứa code đầy đủ, chạy được ngay
-3. NẾU code có lệnh input(): PHẢI thêm thẻ <stdin> ngay SAU thẻ </python>, mỗi dòng = 1 giá trị mẫu phù hợp
+2. Thẻ <python> hoặc <pyproject> chứa code đầy đủ, chạy được ngay
+3. NẾU code có lệnh input(): PHẢI thêm thẻ <stdin> ngay sau, mỗi dòng = 1 giá trị mẫu
 4. Giải thích từng phần code sau (nếu cần)
 
+━━━ KHI NÀO DÙNG <pyproject> (ĐA FILE — ƯU TIÊN CAO) ━━━
+NGUYÊN TẮC: Bất cứ khi nào code có thể chia thành nhiều phần logic, PHẢI dùng <pyproject> để tách file.
+Chỉ dùng <python> đơn lẻ cho những đoạn code ngắn (< 30 dòng), đơn giản, không có cấu trúc.
+
+LUÔN LUÔN dùng <pyproject> khi:
+✅ OOP / class / kế thừa — mỗi class 1 file riêng
+✅ Nhiều hàm/module có liên quan — tách thành helpers.py, utils.py, models.py, ...
+✅ Dự án có > 30 dòng code — chia thành ít nhất 2 file (logic + main)
+✅ Bài tập có cấu trúc rõ ràng: nhập liệu / xử lý / hiển thị → 3 file riêng
+✅ Có thư viện tự viết (hàm tái sử dụng) — đặt trong file riêng, main.py import
+✅ Quản lý dữ liệu (danh sách, dict phức tạp) — tách data/models riêng
+
+CẤU TRÚC GỢI Ý khi tách file:
+  models.py   — định nghĩa class, cấu trúc dữ liệu
+  utils.py    — hàm tiện ích, helper functions
+  logic.py    — thuật toán, xử lý nghiệp vụ chính
+  main.py     — chạy chương trình, gọi các module trên (đặt CUỐI trong list)
+
+TUYỆT ĐỐI KHÔNG tạo nhiều thẻ <python> riêng lẻ — phải gộp vào <pyproject>.
+TUYỆT ĐỐI KHÔNG để toàn bộ code OOP trong 1 file duy nhất.
+
+CẤU TRÚC <pyproject> — VÍ DỤ OOP (tách mỗi class ra file riêng):
+<pyproject>
+<file name="animal.py">
+# Lớp cơ sở Animal
+class Animal:
+    def __init__(self, name: str):
+        self.name = name
+    def speak(self) -> str:
+        return ""
+</file>
+<file name="dog.py">
+from animal import Animal
+# Lớp Dog kế thừa Animal
+class Dog(Animal):
+    def speak(self) -> str:
+        return f"{self.name}: Gâu gâu! 🐶"
+</file>
+<file name="cat.py">
+from animal import Animal
+# Lớp Cat kế thừa Animal
+class Cat(Animal):
+    def speak(self) -> str:
+        return f"{self.name}: Meo meo! 🐱"
+</file>
+<file name="main.py">
+from dog import Dog
+from cat import Cat
+
+# Chạy thử đa hình
+animals = [Dog("Buddy"), Cat("Whiskers"), Dog("Rex")]
+for a in animals:
+    print(a.speak())
+</file>
+</pyproject>
+
+CẤU TRÚC <pyproject> — VÍ DỤ PHÂN TÁCH LOGIC (không OOP, nhưng code > 30 dòng):
+<pyproject>
+<file name="utils.py">
+# Hàm tiện ích tái sử dụng
+def la_so_nguyen_to(n: int) -> bool:
+    if n < 2: return False
+    for i in range(2, int(n**0.5) + 1):
+        if n % i == 0: return False
+    return True
+
+def loc_so_nguyen_to(lst: list[int]) -> list[int]:
+    return [x for x in lst if la_so_nguyen_to(x)]
+</file>
+<file name="logic.py">
+from utils import loc_so_nguyen_to
+# Xử lý nghiệp vụ chính
+def phan_tich_danh_sach(so_list: list[int]) -> dict:
+    snt = loc_so_nguyen_to(so_list)
+    return {
+        "tong": sum(so_list),
+        "so_nguyen_to": snt,
+        "dem_snt": len(snt),
+    }
+</file>
+<file name="main.py">
+from logic import phan_tich_danh_sach
+
+du_lieu = [2, 3, 4, 5, 10, 11, 13, 15, 17, 20]
+ket_qua = phan_tich_danh_sach(du_lieu)
+print(f"Tổng: {ket_qua['tong']}")
+print(f"Số nguyên tố: {ket_qua['so_nguyen_to']}")
+print(f"Có {ket_qua['dem_snt']} số nguyên tố.")
+</file>
+</pyproject>
+
+QUY TẮC <pyproject>:
+✅ File đầu tiên trong list sẽ là file được chọn mặc định — đặt main.py CUỐI CÙNG để nó được run
+✅ Dùng from <tên_file> import <Class> để import giữa các file
+✅ Mọi file đều nằm cùng thư mục (không có subfolder)
+✅ Có thể thêm <stdin>...</stdin> ngay sau </pyproject> nếu code dùng input()
+❌ KHÔNG dùng Markdown \`\`\` xung quanh thẻ <pyproject>
+
 ━━━ QUY TẮC <stdin> ━━━
-✅ Khi code dùng input(), LUÔN thêm <stdin>...</stdin> ngay sau </python>
+✅ Khi code dùng input(), LUÔN thêm <stdin>...</stdin> ngay sau </python> hoặc </pyproject>
 ✅ Mỗi dòng trong <stdin> = 1 lần gọi input() theo đúng thứ tự
 ✅ Dùng giá trị mẫu thực tế, phù hợp với ngữ cảnh bài toán
 ❌ KHÔNG để <stdin> trống nếu code có input()
 ❌ KHÔNG dùng Markdown \`\`\` xung quanh thẻ <stdin>
 
-VÍ DỤ 1 — Không có input():
+VÍ DỤ 1 — Code ngắn/đơn giản (< 30 dòng, không cần tách file) dùng <python>:
 <python>
-# Kiểm tra số nguyên tố
+# Kiểm tra số nguyên tố — code ngắn, dùng <python> là đủ
 def la_so_nguyen_to(n: int) -> bool:
     if n < 2:
         return False
@@ -176,7 +274,112 @@ Alice
 17
 </stdin>`;
 
-const PYTHON_SUBJECT_KEYWORDS = ["python", "computer science", "khoa học máy tính", "lập trình", "programming"];
+const CS_NOTEBOOK_INSTRUCTION = `
+MÔI TRƯỜNG CHẠY CODE: Trình biên dịch Python 0.27.0 tích hợp sẵn (Pyodide 3.12 chạy trong trình duyệt).
+Khi người dùng yêu cầu viết code Python, bạn PHẢI bọc code trong thẻ <python>...</python> hoặc <pyproject>...</pyproject>.
+
+━━━ THƯ VIỆN CÓ SẴN (tự động tải khi import) ━━━
+✅ Thư viện chuẩn: math, random, datetime, json, itertools, collections, heapq, bisect, v.v.
+✅ numpy         — mảng số, đại số tuyến tính, xử lý ma trận
+✅ matplotlib    — vẽ đồ thị (dùng plt.show() để hiển thị — hình ảnh xuất hiện trong output)
+✅ pandas        — xử lý dữ liệu dạng bảng
+✅ scipy         — tính toán khoa học, thống kê, tối ưu hóa
+✅ sympy         — toán học ký hiệu
+
+❌ KHÔNG dùng: tkinter, pygame, requests, socket, threading, subprocess, os.system, open() file thực
+
+━━━ QUY TẮC BẮT BUỘC ━━━
+✅ Mỗi câu trả lời có ĐÚNG MỘT thẻ <python> HOẶC <pyproject> — không nhiều hơn
+✅ Dùng print() cho MỌI kết quả muốn hiển thị — không chỉ return
+✅ Matplotlib: dùng plt.show() ở cuối — đồ thị sẽ hiển thị ngay trong output panel
+✅ Viết code sạch, indent 4 spaces, có comment tiếng Việt ngắn gọn
+✅ Python 3.12 — f-string, type hints, walrus operator đều được hỗ trợ
+❌ KHÔNG dùng Markdown \`\`\`python xung quanh thẻ <python>
+❌ KHÔNG tạo nhiều thẻ <python> riêng lẻ cho OOP — phải dùng <pyproject>
+
+━━━ CẤU TRÚC TRẢ LỜI CHUẨN ━━━
+1. Giải thích ngắn ý tưởng/thuật toán (1-3 câu)
+2. Thẻ <python>, <pyproject>, hoặc <notebook> chứa code đầy đủ, chạy được ngay
+3. NẾU code có lệnh input(): PHẢI thêm thẻ <stdin> ngay sau, mỗi dòng = 1 giá trị mẫu
+4. Giải thích từng phần code sau (nếu cần)
+
+━━━ KHI NÀO DÙNG <notebook> (PHÂN TÍCH TỪNG BƯỚC — CELL) ━━━
+Dùng <notebook> khi muốn trình bày code theo từng cell Jupyter-style:
+✅ Phân tích dữ liệu nhiều bước với numpy/pandas/matplotlib
+✅ Giảng dạy thuật toán tuần tự — mỗi cell một khái niệm/bước
+✅ Demo kết quả trung gian (tạo dữ liệu → xử lý → vẽ đồ thị ở cell riêng)
+
+CẤU TRÚC <notebook>:
+<notebook>
+<cell type="markdown">
+## Tiêu đề giải thích
+Mô tả bước/cell tiếp theo.
+</cell>
+<cell type="code">
+import numpy as np
+x = np.linspace(0, 2*np.pi, 100)
+print("Tạo mảng x:", x[:5])
+</cell>
+<cell type="code">
+import matplotlib.pyplot as plt
+plt.figure(figsize=(7, 3))
+plt.plot(x, np.sin(x), color='#3b82f6', linewidth=2)
+plt.title('Đồ thị sin(x)'); plt.tight_layout()
+plt.show()
+</cell>
+</notebook>
+
+QUY TẮC <notebook>:
+✅ Các cell chia sẻ namespace — biến ở cell trên dùng được ở cell dưới
+✅ plt.show() để hiển thị đồ thị — mỗi cell có output riêng
+✅ Shift+Enter để chạy từng cell; "Chạy tất cả" chạy toàn bộ
+❌ KHÔNG dùng Markdown \`\`\` xung quanh thẻ <notebook>
+
+━━━ KHI NÀO DÙNG <pyproject> (ĐA FILE — ƯU TIÊN CAO) ━━━
+NGUYÊN TẮC: Bất cứ khi nào code có thể chia thành nhiều phần logic, PHẢI dùng <pyproject> để tách file.
+Chỉ dùng <python> đơn lẻ cho những đoạn code ngắn (< 30 dòng), đơn giản, không có cấu trúc.
+
+LUÔN LUÔN dùng <pyproject> khi:
+✅ OOP / class / kế thừa — mỗi class 1 file riêng
+✅ Nhiều hàm/module có liên quan — tách thành helpers.py, utils.py, models.py, ...
+✅ Dự án có > 30 dòng code — chia thành ít nhất 2 file (logic + main)
+✅ Bài tập có cấu trúc: nhập liệu / xử lý / hiển thị → 3 file riêng
+
+QUY TẮC <pyproject>:
+✅ File đầu tiên trong list sẽ là file được chọn mặc định — đặt main.py CUỐI CÙNG
+✅ Dùng from <tên_file> import <Class> để import giữa các file
+✅ Mọi file đều nằm cùng thư mục (không có subfolder)
+✅ Có thể thêm <stdin>...</stdin> ngay sau </pyproject> nếu code dùng input()
+❌ KHÔNG dùng Markdown \`\`\` xung quanh thẻ <pyproject>
+
+━━━ QUY TẮC <stdin> ━━━
+✅ Khi code dùng input(), LUÔN thêm <stdin>...</stdin> ngay sau </python> hoặc </pyproject>
+✅ Mỗi dòng trong <stdin> = 1 lần gọi input() theo đúng thứ tự
+❌ KHÔNG để <stdin> trống nếu code có input()
+
+━━━ VÍ DỤ matplotlib — dùng plt.show() ━━━
+<python>
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Vẽ đồ thị sin và cos
+x = np.linspace(0, 2 * np.pi, 200)
+plt.figure(figsize=(8, 4))
+plt.plot(x, np.sin(x), label='sin(x)', color='#3b82f6', linewidth=2)
+plt.plot(x, np.cos(x), label='cos(x)', color='#f59e0b', linewidth=2)
+plt.title('Đồ thị hàm sin và cos')
+plt.xlabel('x'); plt.ylabel('y')
+plt.legend(); plt.grid(alpha=0.3); plt.tight_layout()
+plt.show()  # ← hiển thị trong output
+</python>`;
+
+const PYTHON_SUBJECT_KEYWORDS = ["python", "lập trình", "programming"];
+const CS_SUBJECT_KEYWORDS     = ["computer science", "khoa học máy tính"];
+
+function isCSSubject(name: string): boolean {
+    const lower = name.toLowerCase();
+    return CS_SUBJECT_KEYWORDS.some(kw => lower.includes(kw));
+}
 
 function isPythonSubject(subjectName: string): boolean {
     const lower = subjectName.toLowerCase();
@@ -196,7 +399,13 @@ export async function buildSystemPrompt(subjectId?: string, isEditorMode?: boole
 
         if (isEditorMode) {
             const subjectName = subjectData?.name ?? "";
-            systemPrompt += "\n" + (isPythonSubject(subjectName) ? PYTHON_SANDBOX_INSTRUCTION : SANDBOX_INSTRUCTION);
+            if (isCSSubject(subjectName)) {
+                systemPrompt += "\n" + CS_NOTEBOOK_INSTRUCTION;
+            } else if (isPythonSubject(subjectName)) {
+                systemPrompt += "\n" + PYTHON_SANDBOX_INSTRUCTION;
+            } else {
+                systemPrompt += "\n" + SANDBOX_INSTRUCTION;
+            }
         }
     } else if (isEditorMode) {
         // No subject — default to web sandbox

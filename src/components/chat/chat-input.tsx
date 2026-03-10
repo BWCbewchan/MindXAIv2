@@ -1,5 +1,5 @@
 import { useChatStore } from "@/store/chat-store";
-import { Code, File as FileIcon, ImageIcon, Paperclip, Send, X } from "lucide-react";
+import { Code, File as FileIcon, ImageIcon, Paperclip, Send, Square, X } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { VoiceInput } from "./voice-input";
 
@@ -20,7 +20,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     const fileInputRef = useRef<HTMLInputElement>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
 
-    const { chatWidth, isEditorMode, setEditorMode } = useChatStore();
+    const { chatWidth, isEditorMode, setEditorMode, stopGeneration } = useChatStore();
 
     useEffect(() => {
         if (textareaRef.current) {
@@ -192,16 +192,28 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                             }}
                             disabled={isLoading}
                         />
-                        <button
-                            type="submit"
-                            disabled={(!message.trim() && attachments.length === 0) || isLoading}
-                            className={`p-3 rounded-full flex-shrink-0 transition-all ${(message.trim() || attachments.length > 0) && !isLoading
-                                ? "bg-blue-500 text-white hover:bg-blue-600 hover:shadow-md hover:-translate-y-0.5"
-                                : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                        {isLoading ? (
+                            <button
+                                type="button"
+                                onClick={stopGeneration}
+                                className="p-3 rounded-full flex-shrink-0 transition-all bg-red-500 text-white hover:bg-red-600 hover:shadow-md hover:-translate-y-0.5"
+                                title="Dừng tạo câu trả lời"
+                            >
+                                <Square size={18} className="fill-white" />
+                            </button>
+                        ) : (
+                            <button
+                                type="submit"
+                                disabled={(!message.trim() && attachments.length === 0) || isLoading}
+                                className={`p-3 rounded-full flex-shrink-0 transition-all ${
+                                    (message.trim() || attachments.length > 0) && !isLoading
+                                        ? "bg-blue-500 text-white hover:bg-blue-600 hover:shadow-md hover:-translate-y-0.5"
+                                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
                                 }`}
-                        >
-                            <Send size={18} className={(message.trim() || attachments.length > 0) && !isLoading ? "ml-0.5" : ""} />
-                        </button>
+                            >
+                                <Send size={18} className={(message.trim() || attachments.length > 0) && !isLoading ? "ml-0.5" : ""} />
+                            </button>
+                        )}
                     </div>
                 </form>
             </div>

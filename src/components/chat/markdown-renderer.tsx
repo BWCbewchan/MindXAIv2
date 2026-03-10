@@ -1,3 +1,4 @@
+import { useChatStore } from "@/store/chat-store";
 import { CheckCircle2, ClipboardCopy } from "lucide-react";
 import React, { useState } from "react";
 import ReactMarkdown from "react-markdown";
@@ -11,15 +12,79 @@ interface MarkdownRendererProps {
     content: string;
 }
 
+function isCSSubject(name: string): boolean {
+    const lower = name.toLowerCase();
+    return ["computer science", "khoa học máy tính"].some(kw => lower.includes(kw));
+}
+
+/* ─── Static multi-file code viewer (CS + editor mode) ──────────── */
+const PyProjectViewer: React.FC<{ files: { name: string; code: string }[] }> = ({ files }) => {
+    const [activeIdx, setActiveIdx] = useState(0);
+    const [copied, setCopied] = useState(false);
+    const active = files[activeIdx] ?? files[0];
+
+    const copy = async () => {
+        try {
+            await navigator.clipboard.writeText(active?.code ?? "");
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch { /* ignore */ }
+    };
+
+    return (
+        <div className="relative rounded-xl overflow-hidden my-4 border border-gray-200 shadow-sm">
+            <div className="flex bg-gray-800 text-gray-200 text-xs font-mono overflow-x-auto">
+                <div className="flex flex-1 overflow-x-auto">
+                    {files.map((f, i) => (
+                        <button
+                            key={i}
+                            onClick={() => setActiveIdx(i)}
+                            className={`px-3 py-2 border-r border-gray-700 flex-shrink-0 transition-colors ${
+                                i === activeIdx ? "bg-gray-700 text-white" : "text-gray-400 hover:text-gray-200"
+                            }`}
+                        >
+                            {f.name}
+                        </button>
+                    ))}
+                </div>
+                <button onClick={copy} className="px-4 py-2 flex items-center gap-1 hover:text-white transition-colors flex-shrink-0">
+                    {copied ? <CheckCircle2 size={14} className="text-green-400" /> : <ClipboardCopy size={14} />}
+                    <span className={copied ? "text-green-400" : ""}>{copied ? "Copied!" : "Copy"}</span>
+                </button>
+            </div>
+            <SyntaxHighlighter
+                language="python"
+                style={vscDarkPlus}
+                customStyle={{ margin: 0, padding: "1rem", fontSize: "0.875rem", borderRadius: 0 }}
+                showLineNumbers={true}
+            >
+                {active?.code ?? ""}
+            </SyntaxHighlighter>
+        </div>
+    );
+};
+
 type ContentPart =
     | { type: "markdown"; content: string }
     | { type: "sandbox"; files: Record<string, string> }
-    | { type: "python"; code: string; stdin?: string };
+    | { type: "python"; code: string; stdin?: string }
+    | { type: "pyproject"; files: { name: string; code: string }[]; stdin?: string }
+    | { type: "notebook"; cells: { type: "markdown" | "code"; source: string }[] };
+
+function parseNotebookCells(raw: string): { type: "markdown" | "code"; source: string }[] {
+    const cells: { type: "markdown" | "code"; source: string }[] = [];
+    const cellRegex = /<cell\s+type="(markdown|code)"[^>]*>([\s\S]*?)(?:<\/cell>|$)/g;
+    let m;
+    while ((m = cellRegex.exec(raw)) !== null) {
+        cells.push({ type: m[1] as "markdown" | "code", source: m[2].trim() });
+    }
+    return cells;
+}
 
 const parseContent = (text: string): ContentPart[] => {
     const parts: ContentPart[] = [];
-    // Match <project>, <python> (with optional trailing <stdin>) blocks
-    const blockRegex = /(<project>[\s\S]*?(?:<\/project>|$))|(<python>([\s\S]*?)(?:<\/python>|$)\s*(?:<stdin>([\s\S]*?)(?:<\/stdin>|$))?)/g;
+    // Match <project>, <python> (with optional <stdin>), <pyproject> (with optional <stdin>), <notebook> blocks
+    const blockRegex = /(<project>[\s\S]*?(?:<\/project>|$))|(<python>([\s\S]*?)(?:<\/python>|$)\s*(?:<stdin>([\s\S]*?)(?:<\/stdin>|$))?)|(<pyproject>([\s\S]*?)(?:<\/pyproject>|$)\s*(?:<stdin>([\s\S]*?)(?:<\/stdin>|$))?)|(<notebook>([\s\S]*?)(?:<\/notebook>|$))/g;
     let lastIndex = 0;
     let match;
 
@@ -43,6 +108,19 @@ const parseContent = (text: string): ContentPart[] => {
         } else if (match[2] !== undefined) {
             // <python> block (+ optional <stdin>)
             parts.push({ type: "python", code: (match[3] ?? "").trim(), stdin: match[4] ? match[4].trim() : undefined });
+        } else if (match[5] !== undefined) {
+            // <pyproject> multi-file block (+ optional <stdin>)
+            const pyFiles: { name: string; code: string }[] = [];
+            const fileRegex2 = /<file name="([^"]+)">([\s\S]*?)(?:<\/file>|$)/g;
+            let fm;
+            while ((fm = fileRegex2.exec(match[6] ?? "")) !== null) {
+                pyFiles.push({ name: fm[1].replace(/^\//, ""), code: fm[2].trim() });
+            }
+            if (pyFiles.length > 0) parts.push({ type: "pyproject", files: pyFiles, stdin: match[7] ? match[7].trim() : undefined });
+        } else if (match[8] !== undefined) {
+            // <notebook> block
+            const cells = parseNotebookCells(match[9] ?? "");
+            if (cells.length > 0) parts.push({ type: "notebook", cells });
         }
 
         lastIndex = blockRegex.lastIndex;
@@ -57,12 +135,22 @@ const parseContent = (text: string): ContentPart[] => {
 
 export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
     const parts = parseContent(content);
+    const { selectedSubjectId, subjects } = useChatStore();
+    const subjectName = subjects.find(s => s.id === selectedSubjectId)?.name ?? "";
 
     return (
         <div className="w-full">
             {parts.map((part, index) => {
                 if (part.type === "python") {
                     return <PythonRunner key={index} initialCode={part.code} initialStdin={part.stdin} />;
+                }
+
+                if (part.type === "pyproject") {
+                    return <PythonRunner key={index} initialFiles={part.files} initialStdin={part.stdin} />;
+                }
+
+                if (part.type === "notebook") {
+                    return <PythonRunner key={`nb-${index}-c${part.cells.length}`} initialCells={part.cells} />;
                 }
 
                 if (part.type === "sandbox") {

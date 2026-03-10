@@ -37,6 +37,7 @@ interface ChatState {
     isSending: boolean;
     chatWidth: number; // Values from 50 to 100 representing percentage
     isEditorMode: boolean; // Enables the Sandbox Live Editor instructions
+    abortController: AbortController | null;
 
     // Actions
     loadSubjects: () => Promise<void>;
@@ -50,6 +51,7 @@ interface ChatState {
     setCurrentChatId: (chatId: string | null) => void;
     setChatWidth: (width: number) => void;
     setEditorMode: (enabled: boolean) => void;
+    stopGeneration: () => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -62,6 +64,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     isSending: false,
     chatWidth: 100,
     isEditorMode: false,
+    abortController: null as AbortController | null,
 
     loadSubjects: async () => {
         const { data } = await supabase
@@ -136,7 +139,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
             chatId = await get().createChat();
         }
 
-        set({ isSending: true });
+        const controller = new AbortController();
+        set({ isSending: true, abortController: controller });
 
         // Save user message
         const { data: userMsg } = await supabase
@@ -175,6 +179,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
             const res = await fetch("/api/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
+                signal: controller.signal,
                 body: JSON.stringify({
                     message: content,
                     chatId,
@@ -185,8 +190,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
             });
 
             if (!res.ok) {
-                const errText = await res.text();
-                throw new Error(errText || "Failed to get AI response");
+                let errorMsg = "Không nhận được phản hồi từ AI";
+                try {
+                    const errJson = await res.json();
+                    errorMsg = errJson.error ?? errorMsg;
+                } catch {
+                    try { errorMsg = await res.text() || errorMsg; } catch { /* ignore */ }
+                }
+                throw new Error(errorMsg);
             }
 
             if (!res.body) {
@@ -196,23 +207,32 @@ export const useChatStore = create<ChatState>((set, get) => ({
             const reader = res.body.getReader();
             const decoder = new TextDecoder();
             let accumulatedText = "";
+            let stopped = false;
 
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
+            try {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
 
-                const chunkText = decoder.decode(value, { stream: true });
-                accumulatedText += chunkText;
+                    const chunkText = decoder.decode(value, { stream: true });
+                    accumulatedText += chunkText;
 
-                // Update the UI progressively
-                set((state) => ({
-                    messages: state.messages.map((m) =>
-                        m.id === aiMessageId ? { ...m, content: accumulatedText } : m
-                    ),
-                }));
+                    // Update the UI progressively
+                    set((state) => ({
+                        messages: state.messages.map((m) =>
+                            m.id === aiMessageId ? { ...m, content: accumulatedText } : m
+                        ),
+                    }));
+                }
+            } catch (streamErr) {
+                if ((streamErr as Error)?.name === "AbortError") {
+                    stopped = true;
+                } else {
+                    throw streamErr;
+                }
             }
 
-            // Sync final message to database
+            // Sync final message to database (even if stopped mid-stream)
             const { data: savedAiMsg } = await supabase
                 .from("messages")
                 .insert({
@@ -232,32 +252,42 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 }));
             }
 
-            // Update chat title if it's the first message
-            if (state.messages.length === 0) {
+            // Update chat title if it's the first message and we weren't stopped before any text
+            if (state.messages.length === 0 && accumulatedText) {
                 const title = content.slice(0, 50) + (content.length > 50 ? "..." : "");
                 await supabase.from("chats").update({ title, updated_at: new Date().toISOString() }).eq("id", chatId);
                 get().loadChats();
             }
         } catch (error) {
-            // Add error message
-            const errorContent =
-                error instanceof Error ? error.message : "Something went wrong";
-            set((state) => ({
-                messages: [
-                    ...state.messages,
-                    {
-                        id: "error-" + Date.now(),
-                        chat_id: chatId!,
-                        role: "assistant",
-                        content: `⚠️ ${errorContent}`,
-                        tokens_used: 0,
-                        created_at: new Date().toISOString(),
-                    },
-                ],
-            }));
+            // Ignore AbortError (user stopped generation)
+            if ((error as Error)?.name !== "AbortError") {
+                const errorContent =
+                    error instanceof Error ? error.message : "Something went wrong";
+                set((state) => ({
+                    messages: [
+                        ...state.messages,
+                        {
+                            id: "error-" + Date.now(),
+                            chat_id: chatId!,
+                            role: "assistant",
+                            content: `⚠️ ${errorContent}`,
+                            tokens_used: 0,
+                            created_at: new Date().toISOString(),
+                        },
+                    ],
+                }));
+            }
         } finally {
-            set({ isSending: false });
+            set({ isSending: false, abortController: null });
         }
+    },
+
+    stopGeneration: () => {
+        const { abortController } = get();
+        if (abortController) {
+            abortController.abort();
+        }
+        set({ isSending: false, abortController: null });
     },
 
     deleteChat: async (chatId: string) => {
