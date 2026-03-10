@@ -1,0 +1,100 @@
+"use client";
+
+import { ChatInput } from "@/components/chat/chat-input";
+import { ChatSidebar } from "@/components/chat/chat-sidebar";
+import { ChatWindow } from "@/components/chat/chat-window";
+import { SettingsModal } from "@/components/chat/settings-modal";
+import { useChatStore } from "@/store/chat-store";
+import { Menu } from "lucide-react";
+import { useEffect, useState } from "react";
+
+export default function ChatPage() {
+    const {
+        chats,
+        subjects,
+        currentChatId,
+        selectedSubjectId,
+        isSending,
+        loadSubjects,
+        loadChats,
+        selectChat,
+        selectSubject,
+        setCurrentChatId,
+        deleteChat,
+        sendMessage,
+    } = useChatStore();
+
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+    // Initial load
+    useEffect(() => {
+        loadSubjects();
+        loadChats();
+    }, [loadSubjects, loadChats]);
+
+    // Handle URL params for direct chat navigation (if needed)
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const chatId = urlParams.get("id");
+        if (chatId) {
+            selectChat(chatId);
+        }
+    }, [selectChat]);
+
+    // Update URL without reload when chat changes
+    useEffect(() => {
+        if (currentChatId) {
+            window.history.replaceState({}, "", `/chat?id=${currentChatId}`);
+        } else {
+            window.history.replaceState({}, "", `/chat`);
+        }
+    }, [currentChatId]);
+
+    return (
+        <div className="flex h-screen overflow-hidden bg-white selection:bg-blue-100 selection:text-blue-900">
+            <ChatSidebar
+                chats={chats}
+                subjects={subjects}
+                currentChatId={currentChatId}
+                selectedSubjectId={selectedSubjectId}
+                onSelectChat={selectChat}
+                onSelectSubject={selectSubject}
+                onNewChat={() => setCurrentChatId(null)}
+                onDeleteChat={deleteChat}
+                isOpen={isSidebarOpen}
+                setIsOpen={setIsSidebarOpen}
+                onOpenSettings={() => setIsSettingsOpen(true)}
+            />
+
+            <main className="flex-1 flex flex-col relative h-full bg-[#FFF8F0]/30">
+                {/* Mobile Header */}
+                <div className="md:hidden flex items-center px-4 py-3 bg-white border-b border-gray-100 z-10 sticky top-0">
+                    <button
+                        onClick={() => setIsSidebarOpen(true)}
+                        className="p-2 -ml-2 text-gray-500 hover:text-blue-500 rounded-lg"
+                    >
+                        <Menu size={24} />
+                    </button>
+                    <div className="flex-1 text-center font-display font-bold text-gray-800">
+                        Sparky AI
+                    </div>
+                    <div className="w-10"></div> {/* Spacer for center alignment */}
+                </div>
+
+                <ChatWindow />
+
+                <ChatInput
+                    onSendMessage={sendMessage}
+                    isLoading={isSending}
+                />
+            </main>
+
+            {/* Settings Modal */}
+            <SettingsModal
+                isOpen={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
+            />
+        </div>
+    );
+}

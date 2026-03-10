@@ -1,0 +1,198 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --color-primary: #6C9BD2;
+    --color-primary-light: #8FB5E0;
+    --color-primary-dark: #4A7CB5;
+    --color-secondary: #F4A261;
+    --color-secondary-light: #F7BC8A;
+    --color-accent: #9B72CF;
+    --color-accent-light: #B494DB;
+    --color-success: #4ECDC4;
+    --color-danger: #E76F51;
+    --color-warning: #F4A261;
+    --color-bg: #FFF8F0;
+    --color-bg-chat: #FFFFFF;
+    --color-bg-sidebar: #F5F0E8;
+    --color-text: #2D3748;
+    --color-text-light: #718096;
+    --color-border: #E8DDD0;
+    --radius: 1rem;
+    --radius-lg: 1.5rem;
+    --font-display: 'Nunito', sans-serif;
+  }
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: var(--font-display);
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-size: 16px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    padding: 0.75rem 1.5rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: var(--font-display);
+    font-size: 1rem;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 155, 210, 0.4);
+  }
+
+  .btn-secondary {
+    background: linear-gradient(135deg, var(--color-secondary), #E8944E);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    padding: 0.75rem 1.5rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: var(--font-display);
+    font-size: 1rem;
+  }
+
+  .btn-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(244, 162, 97, 0.4);
+  }
+
+  .card {
+    background: white;
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid var(--color-border);
+    transition: all 0.2s ease;
+  }
+
+  .card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  }
+
+  .glass {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+  }
+
+  /* Message bubbles */
+  .message-user {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+    color: white;
+    border-radius: var(--radius-lg) var(--radius-lg) 4px var(--radius-lg);
+    padding: 1rem 1.25rem;
+    max-width: 85%;
+    animation: fadeInUp 0.3s ease;
+  }
+
+  .message-ai {
+    background: white;
+    color: var(--color-text);
+    border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) 4px;
+    padding: 1rem 1.25rem;
+    max-width: 85%;
+    border: 1px solid var(--color-border);
+    animation: fadeInUp 0.3s ease;
+  }
+
+  /* Scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 3px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-light);
+  }
+
+  /* Typing indicator */
+  .typing-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    animation: typingBounce 1.4s infinite ease-in-out both;
+  }
+
+  .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+  .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+  .typing-dot:nth-child(3) { animation-delay: 0s; }
+}
+
+@layer utilities {
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes typingBounce {
+    0%, 80%, 100% {
+      transform: scale(0.6);
+      opacity: 0.4;
+    }
+    40% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateX(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fadeInUp 0.3s ease;
+  }
+
+  .animate-slide-in {
+    animation: slideIn 0.3s ease;
+  }
+}
