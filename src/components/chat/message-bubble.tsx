@@ -23,8 +23,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     return (
         <div className={`flex w-full mb-6 ${isUser ? "justify-end" : "justify-start"}`}>
             <div
-                className={`flex max-w-[95%] sm:max-w-[90%] md:max-w-[85%] lg:max-w-[80%] gap-3 ${isUser ? "flex-row-reverse" : "flex-row"
-                    }`}
+                className={`flex gap-3 ${isUser
+                        ? "max-w-[95%] sm:max-w-[90%] md:max-w-[85%] lg:max-w-[80%]"
+                        : "w-full min-w-0"
+                    } ${isUser ? "flex-row-reverse" : "flex-row"}`}
             >
                 {/* Avatar */}
                 <div
@@ -35,10 +37,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 </div>
 
                 {/* Container for Bubble & Timestamp */}
-                <div className={`flex flex-col gap-1 min-w-0 ${isUser ? "items-end" : "items-start"}`}>
+                <div className={`flex flex-col gap-1 min-w-0 ${isUser ? "items-end" : "items-start flex-1"}`}>
                     {/* Bubble */}
                     <div
-                        className={`${isUser ? "message-user" : "message-ai"}`}
+                        className={`${isUser ? "message-user" : "message-ai w-full"}`}
                     >
                         {isTyping ? (
                             <div className="flex items-center space-x-1 py-1 px-2">

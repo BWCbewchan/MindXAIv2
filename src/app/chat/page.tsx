@@ -5,7 +5,7 @@ import { ChatSidebar } from "@/components/chat/chat-sidebar";
 import { ChatWindow } from "@/components/chat/chat-window";
 import { SettingsModal } from "@/components/chat/settings-modal";
 import { useChatStore } from "@/store/chat-store";
-import { Menu } from "lucide-react";
+import { Menu, PanelLeftOpen } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function ChatPage() {
@@ -25,6 +25,7 @@ export default function ChatPage() {
     } = useChatStore();
 
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
     // Initial load
@@ -65,9 +66,11 @@ export default function ChatPage() {
                 isOpen={isSidebarOpen}
                 setIsOpen={setIsSidebarOpen}
                 onOpenSettings={() => setIsSettingsOpen(true)}
+                isDesktopCollapsed={isDesktopCollapsed}
+                onToggleCollapse={() => setIsDesktopCollapsed(c => !c)}
             />
 
-            <main className="flex-1 flex flex-col relative h-full bg-[#FFF8F0]/30">
+            <main className="flex-1 flex flex-col relative h-full bg-[#FFF8F0]/30 min-w-0">
                 {/* Mobile Header */}
                 <div className="md:hidden flex items-center px-4 py-3 bg-white border-b border-gray-100 z-10 sticky top-0">
                     <button
@@ -79,8 +82,19 @@ export default function ChatPage() {
                     <div className="flex-1 text-center font-display font-bold text-gray-800">
                         Sparky AI
                     </div>
-                    <div className="w-10"></div> {/* Spacer for center alignment */}
+                    <div className="w-10"></div>
                 </div>
+
+                {/* Desktop expand button — visible only when sidebar is collapsed */}
+                {isDesktopCollapsed && (
+                    <button
+                        onClick={() => setIsDesktopCollapsed(false)}
+                        className="hidden md:flex absolute top-3 left-3 z-20 items-center gap-1.5 px-2.5 py-1.5 bg-white border border-gray-200 rounded-xl shadow-sm text-gray-500 hover:text-blue-500 hover:border-blue-300 transition-all text-xs font-medium"
+                        title="Mở sidebar"
+                    >
+                        <PanelLeftOpen size={16} />
+                    </button>
+                )}
 
                 <ChatWindow />
 

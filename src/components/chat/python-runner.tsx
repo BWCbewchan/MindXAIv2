@@ -172,9 +172,24 @@ export const PythonRunner: React.FC<PythonRunnerProps> = ({ initialCode = "", in
     const renameRef    = useRef<HTMLInputElement>(null);
     const stdinRef     = useRef<HTMLTextAreaElement>(null);
     const dragStdin    = useRef<{ startY: number; startH: number } | null>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [containerW, setContainerW] = useState(1000);
 
-    const activeFile = files.find(f => f.id === activeId) ?? files[0];
-    const hasInput   = /\binput\s*\(/.test(activeFile.code);
+    const activeFile   = files.find(f => f.id === activeId) ?? files[0];
+    const hasInput      = /\binput\s*\(/.test(activeFile.code);
+    const isNarrow      = containerW < 520;
+    const isVeryNarrow  = containerW < 380;
+
+    /* ── Container resize observer ───────────────────────────────── */
+    useEffect(() => {
+        if (!containerRef.current) return;
+        setContainerW(containerRef.current.getBoundingClientRect().width);
+        const obs = new ResizeObserver(entries => {
+            setContainerW(entries[0].contentRect.width);
+        });
+        obs.observe(containerRef.current);
+        return () => obs.disconnect();
+    }, []);
 
     /* ── Load Pyodide (singleton, race-condition safe) ────────────── */
     useEffect(() => {
@@ -370,7 +385,7 @@ export const PythonRunner: React.FC<PythonRunnerProps> = ({ initialCode = "", in
     /* ── Container style ──────────────────────────────────────────── */
     const wrapStyle: React.CSSProperties = {
         width: "100%",
-        height: isFullscreen ? "calc(100vh - 28px)" : "540px",
+        height: isFullscreen ? "calc(100vh - 28px)" : isNarrow ? "520px" : "540px",
         position: isFullscreen ? "fixed" : "relative",
         ...(isFullscreen && { top: 14, left: 14, right: 14, bottom: 14, zIndex: 50 }),
         display: "flex",
@@ -387,47 +402,47 @@ export const PythonRunner: React.FC<PythonRunnerProps> = ({ initialCode = "", in
 
     /* ── Render ───────────────────────────────────────────────────── */
     return (
-        <div style={wrapStyle}>
+        <div ref={containerRef} style={wrapStyle}>
 
             {/* ══ HEADER ══════════════════════════════════════════════ */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px", background: "#181825", borderBottom: "1px solid #313244", flexShrink: 0, height: 44 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 8px", background: "#181825", borderBottom: "1px solid #313244", flexShrink: 0, height: 44, gap: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "1 1 0", minWidth: 0, overflow: "hidden" }}>
                     {/* macOS traffic lights */}
-                    <div style={{ display: "flex", gap: 5 }}>
+                    <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
                         {(["#f38ba8", "#f9e2af", "#a6e3a1"] as const).map((c, i) => (
                             <div key={i} style={{ width: 11, height: 11, borderRadius: "50%", background: c, opacity: 0.85 }} />
                         ))}
                     </div>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: "#cba6f7", letterSpacing: "0.06em" }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "#cba6f7", letterSpacing: "0.06em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         🐍 Python {pyStatus === "ready" ? pyVersion : "Runner"}
                     </span>
-                    {pyStatus === "loading" && (
-                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    {!isNarrow && pyStatus === "loading" && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                             <div style={{ width: 72, height: 3, background: "#313244", borderRadius: 3, overflow: "hidden" }}>
                                 <div style={{ width: `${loadPct}%`, height: "100%", background: "#cba6f7", transition: "width .5s ease" }} />
                             </div>
                             <span style={{ fontSize: 10, color: "#6c7086" }}>Đang tải…</span>
                         </div>
                     )}
-                    {pyStatus === "error" && <span style={{ fontSize: 10, color: "#f38ba8" }}>⚠ Lỗi runtime</span>}
+                    {pyStatus === "error" && <span style={{ fontSize: 10, color: "#f38ba8", flexShrink: 0 }}>⚠</span>}
                 </div>
 
-                <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
                     <HBtn onClick={copyCode} title="Sao chép code" color={copied ? "#a6e3a1" : "#6c7086"}>
                         {copied ? <CheckCircle2 size={12} /> : <ClipboardCopy size={12} />}
-                        {copied ? "Copied!" : "Copy"}
+                        {!isNarrow && (copied ? "Copied!" : "Copy")}
                     </HBtn>
                     <HBtn onClick={() => setOutput([])} title="Xóa output">
-                        <Trash2 size={12} /> Xóa
+                        <Trash2 size={12} />{!isNarrow && " Xóa"}
                     </HBtn>
                     <button
                         onClick={runCode}
                         disabled={runDisabled}
                         title="Chạy (Ctrl+Enter)"
-                        style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 13px", fontSize: 12, fontWeight: 700, borderRadius: 6, border: "none", cursor: runDisabled ? "not-allowed" : "pointer", background: runDisabled ? "#313244" : "#a6e3a1", color: runDisabled ? "#6c7086" : "#1e1e2e", transition: "all .15s" }}
+                        style={{ display: "flex", alignItems: "center", gap: isVeryNarrow ? 0 : 5, padding: isVeryNarrow ? "6px" : "4px 11px", fontSize: 12, fontWeight: 700, borderRadius: 6, border: "none", cursor: runDisabled ? "not-allowed" : "pointer", background: runDisabled ? "#313244" : "#a6e3a1", color: runDisabled ? "#6c7086" : "#1e1e2e", transition: "all .15s" }}
                     >
                         {isRunning ? <RefreshCw size={12} className="animate-spin" /> : <Play size={12} />}
-                        {isRunning ? "Đang chạy…" : "Chạy ▶"}
+                        {!isVeryNarrow && (isRunning ? "Đang chạy…" : "Chạy ▶")}
                     </button>
                     <HBtn onClick={() => setIsFullscreen(f => !f)} title={isFullscreen ? "Thu nhỏ" : "Phóng to"} style={{ padding: 5 }}>
                         {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
@@ -436,10 +451,10 @@ export const PythonRunner: React.FC<PythonRunnerProps> = ({ initialCode = "", in
             </div>
 
             {/* ══ BODY ════════════════════════════════════════════════ */}
-            <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+            <div style={{ display: "flex", flex: 1, overflow: "hidden", flexDirection: isNarrow ? "column" : "row" }}>
 
                 {/* ── FILE EXPLORER ──────────────────────────────── */}
-                <div style={{ width: 135, flexShrink: 0, background: "#11111b", borderRight: "1px solid #313244", display: "flex", flexDirection: "column" }}>
+                {!isNarrow && <div style={{ width: 135, flexShrink: 0, background: "#11111b", borderRight: "1px solid #313244", display: "flex", flexDirection: "column" }}>
                     <div style={{ padding: "7px 10px 5px", fontSize: 9, fontWeight: 700, color: "#45475a", letterSpacing: ".1em", textTransform: "uppercase", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
                         <span>Explorer</span>
                         <button
@@ -493,13 +508,13 @@ export const PythonRunner: React.FC<PythonRunnerProps> = ({ initialCode = "", in
                             </div>
                         ))}
                     </div>
-                </div>
+                </div>}
 
                 {/* ── CODE EDITOR ────────────────────────────────── */}
-                <div style={{ flex: "1.2 1 0", display: "flex", flexDirection: "column", borderRight: "1px solid #313244", minWidth: 0 }}>
-                    <div style={{ padding: "3px 12px", background: "#181825", borderBottom: "1px solid #313244", fontSize: 10, color: "#6c7086", fontFamily: "monospace", display: "flex", justifyContent: "space-between", flexShrink: 0 }}>
-                        <span style={{ color: "#89b4fa" }}>{activeFile.name}</span>
-                        <span>Ctrl+Enter chạy · Tab = 4 spaces</span>
+                <div style={{ flex: isNarrow ? "1 1 55%" : "1.2 1 0", display: "flex", flexDirection: "column", borderRight: isNarrow ? "none" : "1px solid #313244", borderBottom: isNarrow ? "1px solid #313244" : "none", minWidth: 0, minHeight: 0 }}>
+                    <div style={{ padding: "3px 12px", background: "#181825", borderBottom: "1px solid #313244", fontSize: 10, color: "#6c7086", fontFamily: "monospace", display: "flex", justifyContent: "space-between", flexShrink: 0, overflow: "hidden" }}>
+                        <span style={{ color: "#89b4fa", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{activeFile.name}</span>
+                        {!isNarrow && <span style={{ flexShrink: 0, paddingLeft: 8 }}>Ctrl+Enter chạy · Tab = 4 spaces</span>}
                     </div>
                     <CodeEditor
                         value={activeFile.code}
@@ -509,7 +524,7 @@ export const PythonRunner: React.FC<PythonRunnerProps> = ({ initialCode = "", in
                 </div>
 
                 {/* ── OUTPUT PANEL ───────────────────────────────── */}
-                <div style={{ flex: "1 1 0", display: "flex", flexDirection: "column", minWidth: 0, background: "#181825" }}>
+                <div style={{ flex: isNarrow ? "1 1 45%" : "1 1 0", display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0, background: "#181825" }}>
                     <div style={{ padding: "3px 12px", background: "#181825", borderBottom: "1px solid #313244", fontSize: 10, color: "#6c7086", fontFamily: "monospace", display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                         <Terminal size={10} color="#89b4fa" />
                         <span style={{ color: "#89b4fa" }}>Output</span>

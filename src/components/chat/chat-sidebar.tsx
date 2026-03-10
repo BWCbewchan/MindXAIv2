@@ -1,5 +1,5 @@
 import { Chat, Subject } from "@/store/chat-store";
-import { HelpCircle, Library, MessageCircle, MessageSquarePlus, Trash2 } from "lucide-react";
+import { HelpCircle, Library, MessageCircle, MessageSquarePlus, PanelLeftClose, Trash2 } from "lucide-react";
 import { useNextStep } from "nextstepjs";
 import React from "react";
 
@@ -15,6 +15,8 @@ interface ChatSidebarProps {
     isOpen: boolean;
     setIsOpen: (isOpen: boolean) => void;
     onOpenSettings: () => void;
+    isDesktopCollapsed?: boolean;
+    onToggleCollapse?: () => void;
 }
 
 export const ChatSidebar: React.FC<ChatSidebarProps> = ({
@@ -29,6 +31,8 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
     isOpen,
     setIsOpen,
     onOpenSettings,
+    isDesktopCollapsed = false,
+    onToggleCollapse,
 }) => {
     const { startNextStep } = useNextStep();
 
@@ -42,17 +46,27 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 />
             )}
 
-            {/* Sidebar sidebar */}
+            {/* Sidebar */}
             <div
-                className={`fixed md:static inset-y-0 left-0 z-30 w-72 bg-[#F5F0E8] border-r border-gray-200 transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-                    }`}
+                className={`fixed md:static inset-y-0 left-0 z-30 w-72 bg-[#F5F0E8] border-r border-gray-200 transform transition-all duration-300 ease-in-out flex flex-col
+                    ${ isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+                    ${ isDesktopCollapsed ? "md:w-0 md:overflow-hidden md:border-r-0" : ""}
+                `}
             >
                 <div className="p-4">
                     <div className="flex items-center gap-2 mb-6 px-2">
                         <div className="bg-white p-2 rounded-xl shadow-sm text-blue-500">
                             <Library size={24} />
                         </div>
-                        <h1 className="text-xl font-bold font-display text-gray-800 tracking-tight">AI4Student</h1>
+                        <h1 className="text-xl font-bold font-display text-gray-800 tracking-tight flex-1">AI4Student</h1>
+                        {/* Desktop collapse button */}
+                        <button
+                            onClick={onToggleCollapse}
+                            className="hidden md:flex p-1.5 text-gray-400 hover:text-gray-700 hover:bg-white rounded-lg transition-colors"
+                            title="Ẩn sidebar"
+                        >
+                            <PanelLeftClose size={18} />
+                        </button>
                     </div>
 
                     <button
