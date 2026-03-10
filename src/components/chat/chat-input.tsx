@@ -139,7 +139,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                         onChange={handleFileChange}
                     />
 
-                    <div className="flex items-center gap-1 pl-2 pb-1.5">
+                    <div id="tour-attach-buttons" className="flex items-center gap-1 pl-2 pb-1.5">
                         <button
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
@@ -181,6 +181,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                             <Code size={20} />
                         </button>
 
+                        <div id="tour-voice-input" className="flex items-center">
                         <VoiceInput
                             onTranscript={(text) => {
                                 setMessage(prev => {
@@ -192,6 +193,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                             }}
                             disabled={isLoading}
                         />
+                        </div>
                         {isLoading ? (
                             <button
                                 type="button"

@@ -1,5 +1,5 @@
 import { Message } from "@/store/chat-store";
-import { Bot, User } from "lucide-react";
+import { Bot, Brain, User } from "lucide-react";
 import React from "react";
 import { MarkdownRenderer } from "./markdown-renderer";
 import { useTypewriter } from "./use-typewriter";
@@ -67,8 +67,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                             className={`text-[10px] mt-1 flex gap-2 text-gray-400 px-1`}
                         >
                             {message.tokens_used > 0 && !isUser && (
-                                <span title="Kiến thức AI đã xử lý">
-                                    🧠 {message.tokens_used} tokens
+                                <span title="Kiến thức AI đã xử lý" className="flex items-center gap-1">
+                                    <Brain size={11} /> {message.tokens_used} tokens
                                 </span>
                             )}
                             <span>

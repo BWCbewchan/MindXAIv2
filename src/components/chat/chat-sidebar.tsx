@@ -113,12 +113,12 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 </div>
 
                 {/* Chat History */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-2 mt-2">
+                <div id="tour-chat-history" className="flex-1 overflow-y-auto custom-scrollbar p-2 mt-2">
                     <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 pl-4">Lịch sử trò chuyện</h2>
 
                     {chats.length === 0 ? (
                         <div className="text-center p-4 text-sm text-gray-500 bg-white/50 rounded-xl mx-2">
-                            Chưa có trò chuyện nào. Bắt đầu ngay nhé! 🚀
+                            Chưa có trò chuyện nào. Bắt đầu ngay nhé!
                         </div>
                     ) : (
                         <div className="space-y-1">

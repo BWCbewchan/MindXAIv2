@@ -1,5 +1,6 @@
 "use client";
 
+import { Bot, Check, ChevronRight, Paperclip, RefreshCw, X } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
 /* ─── Types ─────────────────────────────────────────────────────────── */
@@ -109,7 +110,7 @@ function ResultCard({
         return (
             <div style={{ borderRadius: "4px 12px 12px 12px", background: "#1c1c2e", border: "1px solid #cba6f7", padding: "9px 12px", maxWidth: "96%" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
-                    <span style={{ fontSize: 13 }}>⟳</span>
+                    <RefreshCw size={13} style={{ color: "#cba6f7" }} />
                     <span style={{ fontSize: 12, fontWeight: 700, color: "#cba6f7" }}>
                         Đã áp vào editor — đang chờ xác nhận
                     </span>
@@ -123,9 +124,9 @@ function ResultCard({
                 </div>
                 <button
                     onClick={onViewDetail}
-                    style={{ fontSize: 10, color: "#6c7086", background: "none", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline" }}
+                    style={{ fontSize: 10, color: "#6c7086", background: "none", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline", display: "inline-flex", alignItems: "center", gap: 2 }}
                 >
-                    xem giải thích →
+                    xem giải thích <ChevronRight size={10} />
                 </button>
             </div>
         );
@@ -136,7 +137,7 @@ function ResultCard({
         return (
             <div style={{ borderRadius: "4px 12px 12px 12px", background: "#1a2a1a", border: "1px solid #2a4a2a", padding: "8px 11px", maxWidth: "96%" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                    <span style={{ color: "#a6e3a1", fontSize: 14 }}>✓</span>
+                    <Check size={14} style={{ color: "#a6e3a1" }} />
                     <span style={{ fontSize: 12, fontWeight: 700, color: "#a6e3a1" }}>
                         Đã áp dụng {msg.appliedFiles.length} file
                     </span>
@@ -148,8 +149,8 @@ function ResultCard({
                         </span>
                     ))}
                 </div>
-                <button onClick={onViewDetail} style={{ fontSize: 10, color: "#6c7086", background: "none", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline" }}>
-                    xem giải thích →
+                <button onClick={onViewDetail} style={{ fontSize: 10, color: "#6c7086", background: "none", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline", display: "inline-flex", alignItems: "center", gap: 2 }}>
+                    xem giải thích <ChevronRight size={10} />
                 </button>
             </div>
         );
@@ -159,10 +160,10 @@ function ResultCard({
     if (msg.reviewState === "rejected") {
         return (
             <div style={{ borderRadius: "4px 12px 12px 12px", background: "#1e1e2e", border: "1px solid #45475a", padding: "8px 11px", maxWidth: "96%", display: "flex", alignItems: "center", gap: 7 }}>
-                <span style={{ color: "#f38ba8", fontSize: 13 }}>✕</span>
+                <X size={13} style={{ color: "#f38ba8" }} />
                 <span style={{ fontSize: 12, color: "#6c7086" }}>Đã bỏ qua thay đổi</span>
-                <button onClick={onViewDetail} style={{ marginLeft: "auto", fontSize: 10, color: "#45475a", background: "none", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline" }}>
-                    xem →
+                <button onClick={onViewDetail} style={{ marginLeft: "auto", fontSize: 10, color: "#45475a", background: "none", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline", display: "inline-flex", alignItems: "center", gap: 2 }}>
+                    xem <ChevronRight size={10} />
                 </button>
             </div>
         );
@@ -189,7 +190,9 @@ function DetailModal({ content, onClose }: { content: string; onClose: () => voi
             >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <span style={{ fontSize: 13, fontWeight: 700, color: "#cba6f7" }}>Giải thích của AI</span>
-                    <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#6c7086", fontSize: 16 }}>✕</button>
+                    <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#6c7086", display: "flex", alignItems: "center" }}>
+                        <X size={16} />
+                    </button>
                 </div>
                 <div style={{ overflowY: "auto", fontSize: 12.5, lineHeight: 1.7, color: "#cdd6f4", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
                     {content}
@@ -360,7 +363,7 @@ export const IdeAgent: React.FC<IdeAgentProps> = ({ tool, getCurrentCode, onAppl
 
                         {/* ── Header */}
                         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 12px", height: 40, borderBottom: "1px solid #313244", flexShrink: 0, background: "#0d0d17" }}>
-                            <span style={{ fontSize: 15 }}>🤖</span>
+                            <Bot size={15} style={{ color: "#cba6f7" }} />
                             <span style={{ fontSize: 13, fontWeight: 700, color: "#cba6f7", flex: 1, letterSpacing: "-.01em" }}>AI Agent</span>
                             {loading && (
                                 <span style={{ fontSize: 10, color: "#a6e3a1" }}>● đang xử lý</span>
@@ -381,7 +384,7 @@ export const IdeAgent: React.FC<IdeAgentProps> = ({ tool, getCurrentCode, onAppl
                         >
                             {messages.length === 0 ? (
                                 <div style={{ color: "#6c7086", fontSize: 12, textAlign: "center", marginTop: 20, lineHeight: 1.7 }}>
-                                    <div style={{ fontSize: 30, marginBottom: 6 }}>🤖</div>
+                                    <div style={{ display: "flex", justifyContent: "center", marginBottom: 6 }}><Bot size={30} style={{ color: "#9399b2" }} /></div>
                                     <div style={{ fontWeight: 700, color: "#9399b2", marginBottom: 4 }}>AI Agent sẵn sàng!</div>
                                     <div style={{ fontSize: 11, marginBottom: 14 }}>Giao lệnh để AI viết code thẳng vào Explorer</div>
                                     <div style={{ display: "flex", flexDirection: "column", gap: 5, textAlign: "left" }}>
@@ -389,9 +392,9 @@ export const IdeAgent: React.FC<IdeAgentProps> = ({ tool, getCurrentCode, onAppl
                                             <button
                                                 key={s}
                                                 onClick={() => sendMessage(s)}
-                                                style={{ background: "#1e1e2e", border: "1px solid #313244", borderRadius: 7, padding: "6px 10px", color: "#89b4fa", fontSize: 11, cursor: "pointer", textAlign: "left" }}
+                                                style={{ background: "#1e1e2e", border: "1px solid #313244", borderRadius: 7, padding: "6px 10px", color: "#89b4fa", fontSize: 11, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 5 }}
                                             >
-                                                → {s}
+                                                <ChevronRight size={11} /> {s}
                                             </button>
                                         ))}
                                     </div>
@@ -429,9 +432,9 @@ export const IdeAgent: React.FC<IdeAgentProps> = ({ tool, getCurrentCode, onAppl
                             <div style={{ padding: "4px 10px", flexShrink: 0 }}>
                                 <button
                                     onClick={() => sendMessage(input || "Hãy xem lại code hiện tại của tôi", true)}
-                                    style={{ fontSize: 10, color: "#6c7086", background: "#0d0d17", border: "1px solid #313244", borderRadius: 5, padding: "3px 8px", cursor: "pointer" }}
+                                    style={{ fontSize: 10, color: "#6c7086", background: "#0d0d17", border: "1px solid #313244", borderRadius: 5, padding: "3px 8px", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}
                                 >
-                                    📎 Gửi kèm code hiện tại
+                                    <Paperclip size={10} /> Gửi kèm code hiện tại
                                 </button>
                             </div>
                         )}

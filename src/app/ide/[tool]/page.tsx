@@ -3,8 +3,32 @@
 import { PythonRunner, PythonRunnerHandle } from "@/components/chat/python-runner";
 import { SandboxViewer } from "@/components/chat/sandbox-viewer";
 import { IdeAgent } from "@/components/ide/ide-agent";
+import { BookOpen, Bot, Check, Globe, HelpCircle, type LucideIcon, Pencil, Search, Terminal, X } from "lucide-react";
 import Link from "next/link";
+import { useNextStep } from 'nextstepjs';
 import { use, useCallback, useEffect, useRef, useState } from "react";
+
+function IdeHelpButton() {
+    const { startNextStep } = useNextStep();
+    return (
+        <button
+            id="tour-ide-help"
+            onClick={() => startNextStep('ideTour')}
+            title="Hướng dẫn sử dụng IDE"
+            style={{
+                display: "flex", alignItems: "center", gap: 5,
+                fontSize: 12, color: "#6c7086",
+                padding: "4px 10px", borderRadius: 6,
+                border: "1px solid #313244", background: "transparent",
+                cursor: "pointer", transition: "color .12s, border-color .12s",
+            }}
+            onMouseEnter={e => { const el = e.currentTarget; el.style.color = "#89b4fa"; el.style.borderColor = "#89b4fa"; }}
+            onMouseLeave={e => { const el = e.currentTarget; el.style.color = "#6c7086"; el.style.borderColor = "#313244"; }}
+        >
+            <HelpCircle size={13} /> Hướng dẫn
+        </button>
+    );
+}
 
 const DEFAULT_PYTHON = `# Chào mừng đến với Python IDE!
 # Nhấn Ctrl+Enter để chạy code
@@ -91,15 +115,16 @@ btn.addEventListener('click', () => {
 });`,
 };
 
-const TOOL_META: Record<string, { label: string; icon: string; color: string }> = {
-    python:   { label: "Python Script",     icon: "🐍", color: "#3b82f6" },
-    notebook: { label: "Jupyter Notebook",  icon: "📓", color: "#f97316" },
-    sandbox:  { label: "Web Sandbox",       icon: "🌐", color: "#22c55e" },
+const TOOL_META: Record<string, { label: string; Icon: LucideIcon; color: string }> = {
+    python:   { label: "Python Script",    Icon: Terminal, color: "#3b82f6" },
+    notebook: { label: "Jupyter Notebook", Icon: BookOpen,  color: "#f97316" },
+    sandbox:  { label: "Web Sandbox",      Icon: Globe,     color: "#22c55e" },
 };
 
 export default function IdeToolPage({ params }: { params: Promise<{ tool: string }> }) {
     const { tool } = use(params);
     const meta = TOOL_META[tool];
+    const MetaIcon = meta?.Icon;
 
     /* ── Agent state (all hooks before any early return) */
     const [agentOpen, setAgentOpen] = useState(false);
@@ -182,7 +207,7 @@ export default function IdeToolPage({ params }: { params: Promise<{ tool: string
                 justifyContent: "center", gap: 16, color: "#9399b2",
                 fontFamily: "var(--font-display, Nunito, sans-serif)",
             }}>
-                <span style={{ fontSize: 48 }}>🔍</span>
+                <Search size={48} color="#9399b2" />
                 <p style={{ fontSize: 18, fontWeight: 700, color: "#f38ba8" }}>
                     Công cụ &quot;{tool}&quot; không tồn tại
                 </p>
@@ -206,7 +231,7 @@ export default function IdeToolPage({ params }: { params: Promise<{ tool: string
                 background: "#181825",
                 flexShrink: 0,
             }}>
-                <Link href="/ide" title="Danh sách công cụ" style={{
+                <Link id="tour-ide-back" href="/ide" title="Danh sách công cụ" style={{
                     display: "flex", alignItems: "center", gap: 5,
                     color: "#6c7086", textDecoration: "none", fontSize: 13,
                     padding: "4px 8px", borderRadius: 6, transition: "color .12s",
@@ -222,15 +247,18 @@ export default function IdeToolPage({ params }: { params: Promise<{ tool: string
 
                 <span style={{ color: "#313244", fontSize: 16 }}>/</span>
 
-                <span style={{ fontSize: 14, color: meta.color }}>{meta.icon}</span>
-                <span style={{ fontSize: 14, fontWeight: 700, color: "#cdd6f4", letterSpacing: "-0.01em" }}>
-                    {meta.label}
+                <span id="tour-ide-tool-label" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    {MetaIcon && <MetaIcon size={16} color={meta.color} />}
+                    <span style={{ fontSize: 14, fontWeight: 700, color: "#cdd6f4", letterSpacing: "-0.01em" }}>
+                        {meta.label}
+                    </span>
                 </span>
 
                 <div style={{ flex: 1 }} />
 
                 {/* AI Agent toggle */}
                 <button
+                    id="tour-ide-agent"
                     onClick={() => setAgentOpen(v => !v)}
                     title={agentOpen ? "Đóng AI Agent" : "Mở AI Agent"}
                     style={{
@@ -243,8 +271,10 @@ export default function IdeToolPage({ params }: { params: Promise<{ tool: string
                         cursor: "pointer", transition: "all .12s",
                     }}
                 >
-                    🤖 Agent
+                    <Bot size={14} /> Agent
                 </button>
+
+                <IdeHelpButton />
 
                 <Link href="/" style={{
                     fontSize: 12, color: "#45475a", textDecoration: "none",
@@ -273,7 +303,7 @@ export default function IdeToolPage({ params }: { params: Promise<{ tool: string
                             borderBottom: "1px solid #cba6f7",
                             backdropFilter: "blur(6px)",
                         }}>
-                            <span style={{ fontSize: 13 }}>📝</span>
+                            <Pencil size={13} color="#cba6f7" />
                             <span style={{ fontSize: 12, color: "#cba6f7", fontWeight: 600, flex: 1 }}>
                                 AI đề xuất thay đổi — hãy xem xét
                             </span>
@@ -286,7 +316,7 @@ export default function IdeToolPage({ params }: { params: Promise<{ tool: string
                                     color: "#a6e3a1", fontSize: 12, fontWeight: 700,
                                 }}
                             >
-                                ✓ Accept
+                                <Check size={13} /> Accept
                             </button>
                             <button
                                 onClick={handleDiscard}
@@ -297,7 +327,7 @@ export default function IdeToolPage({ params }: { params: Promise<{ tool: string
                                     color: "#f38ba8", fontSize: 12, fontWeight: 700,
                                 }}
                             >
-                                ✕ Discard
+                                <X size={13} /> Discard
                             </button>
                         </div>
                     )}

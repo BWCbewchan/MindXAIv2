@@ -106,6 +106,7 @@ export default function ChatPage() {
 
                 {/* Desktop IDE button — top-right */}
                 <Link
+                    id="tour-ide-button"
                     href="/ide"
                     className="hidden md:flex absolute top-3 right-4 z-20 items-center gap-1.5 px-3 py-1.5 bg-white border border-violet-200 rounded-xl shadow-sm text-violet-600 hover:bg-violet-50 hover:border-violet-400 transition-all text-xs font-semibold"
                     title="Mở IDE"

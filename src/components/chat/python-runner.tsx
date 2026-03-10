@@ -7,9 +7,9 @@ import { oneDark } from "@codemirror/theme-one-dark";
 import { keymap } from "@codemirror/view";
 import { EditorView, basicSetup } from "codemirror";
 import {
-    BookOpen, CheckCircle2,
+    AlertTriangle, BookOpen, CheckCircle2,
     ChevronDown, ChevronUp,
-    ClipboardCopy, FilePlus,
+    ClipboardCopy, Download, FilePlus,
     Maximize2, Minimize2, Play, RefreshCw, RotateCcw, Terminal, Trash2, X,
 } from "lucide-react";
 import React, { useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
@@ -946,8 +946,8 @@ _jc.dumps(_imgs)`
                             <div key={i} style={{ width: 11, height: 11, borderRadius: "50%", background: c, opacity: 0.85 }} />
                         ))}
                     </div>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: "#cba6f7", letterSpacing: "0.06em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        🐍 Python {pyStatus === "ready" ? pyVersion : "Runner"}
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "#cba6f7", letterSpacing: "0.06em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 }}>
+                        <Terminal size={11} /> Python {pyStatus === "ready" ? pyVersion : "Runner"}
                     </span>
                     {!isNarrow && pyStatus === "loading" && (
                         <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
@@ -957,7 +957,7 @@ _jc.dumps(_imgs)`
                             <span style={{ fontSize: 10, color: "#6c7086" }}>Đang tải…</span>
                         </div>
                     )}
-                    {pyStatus === "error" && <span style={{ fontSize: 10, color: "#f38ba8", flexShrink: 0 }}>⚠</span>}
+                    {pyStatus === "error" && <AlertTriangle size={10} style={{ color: "#f38ba8", flexShrink: 0 }} />}
                 </div>
 
                 <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
@@ -1034,7 +1034,7 @@ _jc.dumps(_imgs)`
                                 ) : (
                                     <>
                                         <span style={{ flex: 1, fontSize: 11, color: activeId === file.id ? "#cdd6f4" : "#6c7086", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 }}>
-                                            <span style={{ fontSize: 12 }}>{file.name.endsWith(".ipynb") ? "📓" : "🐍"}</span>{file.name}
+                                            {file.name.endsWith(".ipynb") ? <BookOpen size={12} style={{ color: "#f97316", flexShrink: 0 }} /> : <Terminal size={12} style={{ color: "#3b82f6", flexShrink: 0 }} />}{file.name}
                                         </span>
                                         {files.length > 1 && (
                                             <button
@@ -1125,7 +1125,7 @@ _jc.dumps(_imgs)`
                                 onClick={() => setStdinOpen(o => !o)}
                                 style={{ padding: "4px 10px", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, userSelect: "none" }}
                             >
-                                <span style={{ fontSize: 10 }}>📥</span>
+                                <Download size={10} style={{ flexShrink: 0, color: hasInput ? "#f9e2af" : "#45475a" }} />
                                 <span style={{ fontSize: 10, fontWeight: 600, color: hasInput ? "#f9e2af" : "#45475a", fontFamily: "monospace", letterSpacing: "0.04em" }}>
                                     STDIN {hasInput ? <span style={{ fontSize: 9, background: "#313244", padding: "1px 5px", borderRadius: 3, color: "#cba6f7" }}>input() được phát hiện</span> : ""}
                                 </span>
@@ -1158,12 +1158,12 @@ _jc.dumps(_imgs)`
             {/* ══ LOADING OVERLAY ═════════════════════════════════════ */}
             {pyStatus === "loading" && (
                 <div style={{ position: "absolute", inset: 0, background: "rgba(17,17,27,.92)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, zIndex: 10 }}>
-                    <div style={{ fontSize: 42 }}>🐍</div>
+                    <Terminal size={42} style={{ color: "#cba6f7" }} />
                     <p style={{ color: "#cdd6f4", fontWeight: 600, fontSize: 14, margin: 0 }}>Đang tải Python runtime…</p>
                     <div style={{ width: 220, height: 5, background: "#313244", borderRadius: 5, overflow: "hidden" }}>
                         <div style={{ width: `${loadPct}%`, height: "100%", background: "linear-gradient(90deg,#cba6f7,#89b4fa)", borderRadius: 5, transition: "width .5s ease" }} />
                     </div>
-                    <p style={{ color: "#6c7086", fontSize: 11, margin: 0 }}>Lần đầu ~5-10 giây · Sau được cache lại ⚡</p>
+                    <p style={{ color: "#6c7086", fontSize: 11, margin: 0 }}>Lần đầu ~5-10 giây · Sau được cache lại</p>
                 </div>
             )}
         </div>

@@ -79,7 +79,7 @@ export const ChatWindow = () => {
                         </div>
 
                         <h2 id="tour-welcome-title" className="text-3xl font-display font-bold text-gray-800 mb-2 text-center">
-                            Xin chào! Mình là Mind<span className="text-red-500">X</span> AI 🤖
+                            Xin chào! Mình là Mind<span className="text-red-500">X</span> AI
                         </h2>
                         <p className="text-lg text-gray-500 mb-10 text-center max-w-lg">
                             Trợ lý học tập AI siêu cấp của bạn. Bạn muốn chúng ta cùng tìm hiểu về điều gì hôm nay?

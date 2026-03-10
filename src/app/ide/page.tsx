@@ -1,12 +1,13 @@
 "use client";
 
+import { ArrowLeft, ArrowRight, BookOpen, Globe, Terminal } from "lucide-react";
 import Link from "next/link";
 
 const TOOLS = [
     {
         slug: "python",
         label: "Python Script",
-        icon: "🐍",
+        Icon: Terminal,
         desc: "Viết và chạy Python với Pyodide — hỗ trợ numpy, matplotlib, pandas, scipy, sympy.",
         color: "#3b82f6",
         border: "rgba(59,130,246,.35)",
@@ -14,7 +15,7 @@ const TOOLS = [
     {
         slug: "notebook",
         label: "Jupyter Notebook",
-        icon: "📓",
+        Icon: BookOpen,
         desc: "Notebook kiểu Jupyter — chia cell code / markdown, chạy từng cell, xem biểu đồ inline.",
         color: "#f97316",
         border: "rgba(249,115,22,.35)",
@@ -22,7 +23,7 @@ const TOOLS = [
     {
         slug: "sandbox",
         label: "Web Sandbox",
-        icon: "🌐",
+        Icon: Globe,
         desc: "Editor HTML + CSS + JS với live preview — dựa trên CodeSandbox Sandpack.",
         color: "#22c55e",
         border: "rgba(34,197,94,.35)",
@@ -79,7 +80,7 @@ export default function IdePage() {
                                 (e.currentTarget as HTMLDivElement).style.boxShadow = "none";
                             }}
                         >
-                            <span style={{ fontSize: 36 }}>{tool.icon}</span>
+                            <tool.Icon size={36} color={tool.color} />
                             <div>
                                 <div style={{ fontSize: 17, fontWeight: 700, color: tool.color, marginBottom: 6 }}>
                                     {tool.label}
@@ -89,15 +90,15 @@ export default function IdePage() {
                                 </div>
                             </div>
                             <div style={{ marginTop: "auto", display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: tool.color, fontWeight: 600 }}>
-                                Mở IDE →
+                                Mở IDE <ArrowRight size={12} />
                             </div>
                         </div>
                     </Link>
                 ))}
             </div>
 
-            <Link href="/" style={{ fontSize: 13, color: "#45475a", textDecoration: "none" }}>
-                ← Quay lại trang chính
+            <Link href="/" style={{ fontSize: 13, color: "#45475a", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5 }}>
+                <ArrowLeft size={13} /> Quay lại trang chính
             </Link>
         </div>
     );

@@ -6,7 +6,7 @@ import { EditorState } from "@codemirror/state";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { keymap } from "@codemirror/view";
 import { EditorView, basicSetup } from "codemirror";
-import { Code, RefreshCw, RotateCcw, SkipForward, Trash2, Type } from "lucide-react";
+import { AlertTriangle, Code, RefreshCw, RotateCcw, SkipForward, Terminal, Trash2, Type } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -370,7 +370,7 @@ setattr(_bi, '${k}', {})
         }}>
             {/* ── Toolbar ── */}
             <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", background: "#f8f9fa", borderBottom: "1px solid #e8eaed" }}>
-                <span style={{ fontSize: 15 }}>🐍</span>
+                <Terminal size={15} style={{ color: "#4285f4", flexShrink: 0 }} />
                 <span style={{ fontSize: 12.5, fontWeight: 700, color: "#202124", letterSpacing: "-.01em" }}>Jupyter Notebook</span>
 
                 <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 6, marginLeft: 2 }}>
@@ -395,7 +395,9 @@ setattr(_bi, '${k}', {})
                         </div>
                     )}
                     {pyStatus === "error" && (
-                        <span style={{ fontSize: 11, color: "#c5221f", fontWeight: 600 }}>⚠ Lỗi tải Python</span>
+                        <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#c5221f", fontWeight: 600 }}>
+                            <AlertTriangle size={11} /> Lỗi tải Python
+                        </span>
                     )}
                 </div>
 
