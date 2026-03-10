@@ -4,14 +4,14 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
     try {
-        const { message, chatId, subjectId, history, isEditorMode } = await request.json();
+        const { message, chatId, subjectId, history, isEditorMode, ideMode } = await request.json();
 
         if (!message) {
             return NextResponse.json({ error: "Message is required" }, { status: 400 });
         }
 
         // Build system prompt with knowledge context and editor mode
-        const systemPrompt = await buildSystemPrompt(subjectId, isEditorMode);
+        const systemPrompt = await buildSystemPrompt(subjectId, isEditorMode, ideMode);
 
         // Get Stream generator
         const streamGenerator = streamFromGemini(message, systemPrompt, history || []);

@@ -1,14 +1,15 @@
 import { useChatStore } from "@/store/chat-store";
-import { ChevronDown, X } from "lucide-react";
+import { BookOpen, ChevronDown, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
 interface SettingsModalProps {
     isOpen: boolean;
     onClose: () => void;
+    initialTab?: string;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
-    const [activeTab, setActiveTab] = useState("personalization");
+export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, initialTab }) => {
+    const [activeTab, setActiveTab] = useState(initialTab ?? "personalization");
     const [baseTone, setBaseTone] = useState("Thân thiện");
     const [isToneDropdownOpen, setIsToneDropdownOpen] = useState(false);
 
@@ -47,6 +48,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
     }, [isOpen, onClose]);
+
+    // Sync tab when modal opens with a specific initial tab
+    useEffect(() => {
+        if (isOpen && initialTab) setActiveTab(initialTab);
+    }, [isOpen, initialTab]);
 
     if (!isOpen) return null;
 
@@ -96,6 +102,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                             className={`text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === "advanced" ? "bg-white shadow-sm text-blue-600" : "text-gray-600 hover:bg-gray-100"}`}
                         >
                             Nâng cao
+                        </button>
+                        <div className="h-px bg-gray-100 my-2" />
+                        <button
+                            onClick={() => setActiveTab("guide")}
+                            className={`text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${activeTab === "guide" ? "bg-white shadow-sm text-violet-600" : "text-gray-600 hover:bg-gray-100"}`}
+                        >
+                            <BookOpen size={14} />
+                            Hướng dẫn
                         </button>
                     </div>
 
@@ -267,10 +281,122 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                             </section>
                         )}
 
-                        {activeTab === "advanced" && (
-                            <section className="mb-6 animate-fade-in">
-                                <h3 className="text-lg font-medium text-gray-800 mb-4 border-b border-gray-100 pb-2">Nâng cao</h3>
+                        {activeTab === "guide" && (
+                            <section className="animate-fade-in">
+                                <div className="flex items-center gap-2 mb-6 border-b border-gray-100 pb-3">
+                                    <BookOpen size={18} className="text-violet-500" />
+                                    <h3 className="text-lg font-semibold text-gray-800">Hướng dẫn sử dụng</h3>
+                                </div>
 
+                                {/* ── CHAT ── */}
+                                <GuideSection title="💬 Chat AI" color="blue">
+                                    <GuideItem icon="✨" title="Bắt đầu cuộc trò chuyện">
+                                        Gõ tin nhắn vào ô nhập liệu phía dưới và nhấn <Kbd>Enter</Kbd> hoặc nút gửi → để bắt đầu. Dùng <Kbd>Shift+Enter</Kbd> để xuống dòng.
+                                    </GuideItem>
+                                    <GuideItem icon="📂" title="Quản lý cuộc hội thoại">
+                                        <ul className="list-disc pl-4 space-y-1">
+                                            <li>Sidebar trái liệt kê toàn bộ lịch sử hội thoại.</li>
+                                            <li>Nhấn <strong>+ Chat mới</strong> để tạo cuộc trò chuyện mới.</li>
+                                            <li>Nhấp vào tên cuộc hội thoại bất kỳ để tiếp tục.</li>
+                                            <li>Biểu tượng thùng rác để xóa cuộc hội thoại.</li>
+                                        </ul>
+                                    </GuideItem>
+                                    <GuideItem icon="🎯" title="Chủ đề học">
+                                        Chọn chủ đề (môn học) từ sidebar để AI trả lời tập trung vào môn học đó với kiến thức chuyên sâu hơn.
+                                    </GuideItem>
+                                    <GuideItem icon="🎤" title="Nhập liệu bằng giọng nói">
+                                        Nhấn biểu tượng micro ở ô nhập liệu, nói ra yêu cầu — văn bản sẽ được điền tự động.
+                                    </GuideItem>
+                                    <GuideItem icon="📎" title="Tải tài liệu">
+                                        Nhấn biểu tượng <strong>kẹp giấy</strong> để đính kèm file (PDF, Word, hình ảnh…). AI sẽ đọc và trả lời dựa trên nội dung tài liệu.
+                                    </GuideItem>
+                                    <GuideItem icon="💡" title="Gợi ý nhanh">
+                                        Các nút gợi ý phía trên ô nhập liệu giúp bắt đầu nhanh. Nhấp vào để điền sẵn câu hỏi.
+                                    </GuideItem>
+                                    <GuideItem icon="📝" title="Sao chép và phản hồi">
+                                        Hover vào bất kỳ tin nhắn nào của AI để thấy nút <strong>Sao chép</strong> và <strong>Phản hồi</strong> (thích/không thích).
+                                    </GuideItem>
+                                </GuideSection>
+
+                                {/* ── IDE ── */}
+                                <GuideSection title="⚡ IDE" color="violet">
+                                    <GuideItem icon="🚀" title="Mở IDE">
+                                        Nhấn nút <strong>IDE</strong> góc trên bên phải của trang Chat, hoặc truy cập trực tiếp tại <strong>/ide</strong>.
+                                    </GuideItem>
+                                    <GuideItem icon="🐍" title="Python IDE">
+                                        <ul className="list-disc pl-4 space-y-1">
+                                            <li>Trình soạn thảo code Python với Explorer file bên trái.</li>
+                                            <li>Nhấn <Kbd>Ctrl+Enter</Kbd> hoặc nút <strong>▶ Run</strong> để chạy code.</li>
+                                            <li>Thêm file bằng nút <strong>+</strong> trên Explorer, nhấp đúp tên file để đổi tên.</li>
+                                            <li>Kéo thả đượng phân cách để thạy đổi kích thước Editor/Terminal.</li>
+                                        </ul>
+                                    </GuideItem>
+                                    <GuideItem icon="📓" title="Jupyter Notebook">
+                                        <ul className="list-disc pl-4 space-y-1">
+                                            <li>Giao diện theo kiểu Colab với các cell riêng biệt.</li>
+                                            <li><Kbd>Shift+Enter</Kbd> chạy cell hiện tại và chuyển xuống.</li>
+                                            <li>Nút <strong>+Code</strong> / <strong>+Markdown</strong> để thêm cell mới.</li>
+                                            <li>Cell Markdown hỗ trợ tiêu đề, in đậm, danh sách…</li>
+                                        </ul>
+                                    </GuideItem>
+                                    <GuideItem icon="🌐" title="Web Sandbox">
+                                        <ul className="list-disc pl-4 space-y-1">
+                                            <li>Viết HTML, CSS, JavaScript và xem Preview trực tiếp.</li>
+                                            <li>Explorer liệt kê các file <code className="bg-gray-100 px-1 rounded text-xs">/index.html</code>, <code className="bg-gray-100 px-1 rounded text-xs">/css/style.css</code>, <code className="bg-gray-100 px-1 rounded text-xs">/js/main.js</code>.</li>
+                                            <li>Nhấn <strong>Preview</strong> hoặc <strong>Split</strong> để xem kết quả song song.</li>
+                                            <li>Bootstrap 5, FontAwesome, Google Fonts đã được tích hợp sẵn.</li>
+                                        </ul>
+                                    </GuideItem>
+                                    <GuideItem icon="🤖" title="AI Agent trong IDE">
+                                        <ul className="list-disc pl-4 space-y-1">
+                                            <li>Nhấn nút <strong>🤖 Agent</strong> góc trên bên phải của IDE để mở sidebar AI.</li>
+                                            <li>AI Agent tự động đọc code hiện tại và trả lời theo ngữ cảnh.</li>
+                                            <li>Khi AI viết code mới, code được áp thẳng vào editor để xem trước.</li>
+                                            <li>Thanh <strong className="text-green-600">✓ Accept</strong> / <strong className="text-red-500">✕ Discard</strong> xuất hiện trên editor — chọn Accept để giữ, Discard để hoàn tác về code cũ.</li>
+                                            <li>Nút <strong>📎 Gửi kèm code</strong> để gửi lại code mới nhất cho AI xem xét.</li>
+                                        </ul>
+                                    </GuideItem>
+                                </GuideSection>
+
+                                {/* ── KNOWLEDGE ── */}
+                                <GuideSection title="📚 Kiến thức & Quản trị" color="green">
+                                    <GuideItem icon="📁" title="Tải tài liệu lên cơ sở kiến thức">
+                                        Vào <strong>Admin</strong> → tab <strong>Kiến thức</strong> và tải file PDF/Word. AI sẽ dùng nội dung này để trả lời chính xác hơn.
+                                    </GuideItem>
+                                    <GuideItem icon="📊" title="Thống kê sử dụng">
+                                        Tab <strong>Thống kê</strong> trong Admin hiển thị lượng token, số cuộc hội thoại và chi phí API.
+                                    </GuideItem>
+                                    <GuideItem icon="🔑" title="Quản lý API Key">
+                                        Vào <strong>Admin → API Keys</strong> để thêm, xóa hoặc tạm khóa API key.
+                                    </GuideItem>
+                                </GuideSection>
+
+                                {/* ── SHORTCUTS ── */}
+                                <GuideSection title="⌨️ Phím tắt" color="gray">
+                                    <div className="grid grid-cols-2 gap-2 text-sm">
+                                        {[
+                                            ["Enter", "Gửi tin nhắn"],
+                                            ["Shift+Enter", "Xuống dòng"],
+                                            ["Ctrl+Enter", "Chạy code (IDE)"],
+                                            ["Shift+Enter", "Chạy cell (Notebook)"],
+                                            ["Esc", "Đóng cửa sổ"],
+                                            ["Ctrl+Z", "Hoàn tác (editor)"],
+                                        ].map(([key, desc]) => (
+                                            <div key={key} className="flex items-center gap-2">
+                                                <Kbd>{key}</Kbd>
+                                                <span className="text-gray-600 text-xs">{desc}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </GuideSection>
+                            </section>
+                        )}
+
+                        {activeTab === "advanced" && (
+                            <section className="mb-10 animate-fade-in">
+                                <div className="flex items-center border-b border-gray-100 pb-2 mb-4">
+                                    <h3 className="text-lg font-medium text-gray-800">Nâng cao</h3>
+                                </div>
                                 <div className="space-y-4">
                                     <ToggleRow
                                         title="Tìm kiếm trên mạng"
@@ -334,3 +460,32 @@ const ToggleRow = ({ title, description, checked, onChange }: { title: string, d
         </label>
     );
 };
+
+// Guide sub-components
+const COLOR_MAP: Record<string, string> = {
+    blue:   "text-blue-600 border-blue-100 bg-blue-50/60",
+    violet: "text-violet-600 border-violet-100 bg-violet-50/60",
+    green:  "text-green-600 border-green-100 bg-green-50/60",
+    gray:   "text-gray-600 border-gray-100 bg-gray-50/60",
+};
+
+const GuideSection: React.FC<{ title: string; color: string; children: React.ReactNode }> = ({ title, color, children }) => (
+    <div className={`mb-5 rounded-xl border p-4 ${COLOR_MAP[color] ?? "border-gray-100 bg-gray-50"}`}>
+        <div className={`font-semibold text-sm mb-3 ${COLOR_MAP[color]?.split(" ")[0] ?? "text-gray-700"}`}>{title}</div>
+        <div className="space-y-3">{children}</div>
+    </div>
+);
+
+const GuideItem: React.FC<{ icon: string; title: string; children: React.ReactNode }> = ({ icon, title, children }) => (
+    <div className="flex gap-2.5">
+        <span className="text-base mt-0.5 shrink-0">{icon}</span>
+        <div>
+            <div className="text-sm font-medium text-gray-800 mb-0.5">{title}</div>
+            <div className="text-xs text-gray-600 leading-relaxed">{children}</div>
+        </div>
+    </div>
+);
+
+const Kbd: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <kbd className="inline-flex items-center px-1.5 py-0.5 rounded bg-gray-100 border border-gray-300 text-xs font-mono text-gray-700 shadow-sm">{children}</kbd>
+);

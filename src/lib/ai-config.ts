@@ -386,10 +386,17 @@ function isPythonSubject(subjectName: string): boolean {
     return PYTHON_SUBJECT_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
-export async function buildSystemPrompt(subjectId?: string, isEditorMode?: boolean): Promise<string> {
+export async function buildSystemPrompt(subjectId?: string, isEditorMode?: boolean, ideMode?: string): Promise<string> {
     let systemPrompt = DEFAULT_SYSTEM_PROMPT;
 
-    if (subjectId) {
+    // IDE agent overrides: pick instruction by tool, no subjectId needed
+    if (ideMode) {
+        if (ideMode === "python" || ideMode === "notebook") {
+            systemPrompt += "\n" + CS_NOTEBOOK_INSTRUCTION;
+        } else if (ideMode === "sandbox") {
+            systemPrompt += "\n" + SANDBOX_INSTRUCTION;
+        }
+    } else if (subjectId) {
         // Fetch subject name to choose the correct sandbox instruction
         const { data: subjectData } = await supabase
             .from("subjects")
@@ -407,7 +414,7 @@ export async function buildSystemPrompt(subjectId?: string, isEditorMode?: boole
                 systemPrompt += "\n" + SANDBOX_INSTRUCTION;
             }
         }
-    } else if (isEditorMode) {
+    } else if (!ideMode && isEditorMode) {
         // No subject — default to web sandbox
         systemPrompt += "\n" + SANDBOX_INSTRUCTION;
     }

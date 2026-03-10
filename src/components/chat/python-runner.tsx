@@ -12,7 +12,7 @@ import {
     ClipboardCopy, FilePlus,
     Maximize2, Minimize2, Play, RefreshCw, RotateCcw, Terminal, Trash2, X,
 } from "lucide-react";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 
 /* ─── Pyodide global types ──────────────────────────────────────────── */
 declare global {
@@ -29,12 +29,20 @@ interface PyodideAPI {
 
 /* ─── Local types ───────────────────────────────────────────────────── */
 interface OutputLine { type: "stdout" | "stderr" | "result" | "info" | "image"; text: string; }
-interface PyFile     { id: string; name: string; code: string; }
+interface PyFile { id: string; name: string; code: string; }
+export interface PythonRunnerHandle {
+    applyCode: (code: string) => void;
+    setProjectFiles: (files: { name: string; code: string }[]) => void;
+    getProjectFiles: () => { name: string; code: string }[];
+}
+
 interface PythonRunnerProps {
     initialCode?: string;
     initialStdin?: string;
     initialFiles?: { name: string; code: string }[];
     initialCells?: { type: "markdown" | "code"; source: string }[];
+    fillHeight?: boolean;
+    onCodeChange?: (code: string) => void;
 }
 
 /* ─── Singleton Pyodide loader ──────────────────────────────────────── */
@@ -43,15 +51,15 @@ let _loadingPromise: Promise<PyodideAPI> | null = null;
 
 function ensurePyodide(): Promise<PyodideAPI> {
     if (typeof window === "undefined") return Promise.reject(new Error("Browser only"));
-    if (window._pyodideInstance)       return Promise.resolve(window._pyodideInstance);
-    if (_loadingPromise)               return _loadingPromise;
+    if (window._pyodideInstance) return Promise.resolve(window._pyodideInstance);
+    if (_loadingPromise) return _loadingPromise;
 
     _loadingPromise = (async () => {
         if (!window.loadPyodide) {
             await new Promise<void>((resolve, reject) => {
                 const s = document.createElement("script");
-                s.src     = `${PYODIDE_CDN}pyodide.js`;
-                s.onload  = () => resolve();
+                s.src = `${PYODIDE_CDN}pyodide.js`;
+                s.onload = () => resolve();
                 s.onerror = () => reject(new Error("Không tải được Pyodide. Kiểm tra kết nối mạng."));
                 document.head.appendChild(s);
             });
@@ -187,9 +195,9 @@ const NotebookView: React.FC<{
             outputs: [], execCount: null, running: false,
         }))
     );
-    const cellsRef      = useRef(cells);
-    const execCountRef  = useRef(0);
-    const nsKeyRef      = useRef(`__ipynb_${Math.random().toString(36).slice(2)}__`);
+    const cellsRef = useRef(cells);
+    const execCountRef = useRef(0);
+    const nsKeyRef = useRef(`__ipynb_${Math.random().toString(36).slice(2)}__`);
     const prevSourceRef = useRef("");
     useEffect(() => { cellsRef.current = cells; }, [cells]);
 
@@ -210,17 +218,17 @@ const NotebookView: React.FC<{
         const cell = cellsRef.current[idx];
         if (cell.type !== "code" || !cell.source.trim()) return;
 
-        const pkgs   = detectSciPkgs(cell.source);
+        const pkgs = detectSciPkgs(cell.source);
         const usesMpl = /\bimport\s+matplotlib\b|\bfrom\s+matplotlib\b/.test(cell.source);
         if (pkgs.length > 0) { try { await (py as any).loadPackage?.(pkgs); } catch { /* ignore */ } }
-        if (usesMpl)         { try { await py.runPythonAsync(`import matplotlib; matplotlib.use('Agg')`); } catch { /* ignore */ } }
+        if (usesMpl) { try { await py.runPythonAsync(`import matplotlib; matplotlib.use('Agg')`); } catch { /* ignore */ } }
 
         const nsKey = nsKeyRef.current;
         await py.runPythonAsync(`import builtins as _bi\nif not hasattr(_bi, '${nsKey}'): setattr(_bi, '${nsKey}', {})`);
 
         setCells(prev => prev.map((c, i) => i === idx ? { ...c, running: true, outputs: [] } : c));
         try {
-            const src    = JSON.stringify(cell.source);
+            const src = JSON.stringify(cell.source);
             const script = [
                 "import sys, io, traceback, builtins as _bi",
                 `_ns = getattr(_bi, '${nsKey}', {})`,
@@ -246,7 +254,7 @@ const NotebookView: React.FC<{
             if (usesMpl) {
                 try {
                     figImages = JSON.parse(String(await py.runPythonAsync(
-`import json as _j, io as _io, base64 as _b64
+                        `import json as _j, io as _io, base64 as _b64
 try:
     import matplotlib.pyplot as _plt
     _figs = []
@@ -499,11 +507,11 @@ const CodeEditor: React.FC<{
     onChange: (v: string) => void;
     onRun: () => void;
 }> = ({ value, onChange, onRun }) => {
-    const hostRef  = useRef<HTMLDivElement>(null);
-    const viewRef  = useRef<EditorView | null>(null);
+    const hostRef = useRef<HTMLDivElement>(null);
+    const viewRef = useRef<EditorView | null>(null);
     const onRunRef = useRef(onRun);
     const onChgRef = useRef(onChange);
-    useEffect(() => { onRunRef.current = onRun;    }, [onRun]);
+    useEffect(() => { onRunRef.current = onRun; }, [onRun]);
     useEffect(() => { onChgRef.current = onChange; }, [onChange]);
 
     /* Mount once */
@@ -582,9 +590,10 @@ const HBtn: React.FC<{
     </button>
 );
 /* ─── Component ─────────────────────────────────────────────────────── */
-export const PythonRunner: React.FC<PythonRunnerProps> = ({ initialCode = "", initialStdin = "", initialFiles, initialCells }) => {
+export const PythonRunner = React.forwardRef<PythonRunnerHandle, PythonRunnerProps>(
+    function PythonRunner({ initialCode = "", initialStdin = "", initialFiles, initialCells, fillHeight = false, onCodeChange }, ref) {
     /* file state */
-    const [files,     setFiles]     = useState<PyFile[]>(() => {
+    const [files, setFiles] = useState<PyFile[]>(() => {
         if (initialFiles && initialFiles.length > 0) {
             return initialFiles.map((f, i) => ({ id: i === 0 ? "main" : `f${i}`, name: f.name, code: f.code }));
         }
@@ -593,36 +602,36 @@ export const PythonRunner: React.FC<PythonRunnerProps> = ({ initialCode = "", in
         }
         return [{ id: "main", name: "main.py", code: initialCode }];
     });
-    const [activeId,  setActiveId]  = useState("main");
+    const [activeId, setActiveId] = useState("main");
     const [renamingId, setRenamingId] = useState<string | null>(null);
-    const [renameVal,  setRenameVal]  = useState("");
+    const [renameVal, setRenameVal] = useState("");
 
     /* runtime state */
-    const [output,       setOutput]       = useState<OutputLine[]>([]);
-    const [isRunning,    setIsRunning]    = useState(false);
-    const [pyStatus,     setPyStatus]     = useState<"idle" | "loading" | "ready" | "error">("idle");
-    const [pyVersion,    setPyVersion]    = useState("");
-    const [loadPct,      setLoadPct]      = useState(0);
+    const [output, setOutput] = useState<OutputLine[]>([]);
+    const [isRunning, setIsRunning] = useState(false);
+    const [pyStatus, setPyStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+    const [pyVersion, setPyVersion] = useState("");
+    const [loadPct, setLoadPct] = useState(0);
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [copied,       setCopied]       = useState(false);
-    const [stdinText,    setStdinText]    = useState(initialStdin);
-    const [stdinOpen,    setStdinOpen]    = useState(true);
-    const [stdinHeight,  setStdinHeight]  = useState(80);
+    const [copied, setCopied] = useState(false);
+    const [stdinText, setStdinText] = useState(initialStdin);
+    const [stdinOpen, setStdinOpen] = useState(true);
+    const [stdinHeight, setStdinHeight] = useState(80);
 
-    const pyRef        = useRef<PyodideAPI | null>(null);
+    const pyRef = useRef<PyodideAPI | null>(null);
     const outputEndRef = useRef<HTMLDivElement>(null);
-    const renameRef    = useRef<HTMLInputElement>(null);
-    const stdinRef     = useRef<HTMLTextAreaElement>(null);
-    const dragStdin    = useRef<{ startY: number; startH: number } | null>(null);
+    const renameRef = useRef<HTMLInputElement>(null);
+    const stdinRef = useRef<HTMLTextAreaElement>(null);
+    const dragStdin = useRef<{ startY: number; startH: number } | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [containerW, setContainerW] = useState(0);
 
-    const activeFile   = files.find(f => f.id === activeId) ?? files[0];
-    const isNotebook    = activeFile.name.endsWith(".ipynb");
-    const hasInput      = !isNotebook && files.some(f => !f.name.endsWith(".ipynb") && /\binput\s*\(/.test(f.code));
+    const activeFile = files.find(f => f.id === activeId) ?? files[0];
+    const isNotebook = activeFile.name.endsWith(".ipynb");
+    const hasInput = !isNotebook && files.some(f => !f.name.endsWith(".ipynb") && /\binput\s*\(/.test(f.code));
     const notebookRunAllRef = useRef<(() => Promise<void>) | null>(null);
-    const isNarrow      = containerW < 520;
-    const isVeryNarrow  = containerW < 380;
+    const isNarrow = containerW < 520;
+    const isVeryNarrow = containerW < 380;
 
     /* ── Container resize observer ───────────────────────────────── */
     useEffect(() => {
@@ -696,8 +705,27 @@ export const PythonRunner: React.FC<PythonRunnerProps> = ({ initialCode = "", in
     useEffect(() => { if (renamingId) renameRef.current?.focus(); }, [renamingId]);
 
     /* ── File helpers ─────────────────────────────────────────────── */
-    const updateCode = (code: string) =>
+    const updateCode = (code: string) => {
         setFiles(prev => prev.map(f => f.id === activeId ? { ...f, code } : f));
+        onCodeChange?.(code);
+    };
+
+    useImperativeHandle(ref, () => ({
+        applyCode: (code: string) => {
+            setFiles(prev => prev.map(f => f.id === activeId ? { ...f, code } : f));
+        },
+        setProjectFiles: (incoming: { name: string; code: string }[]) => {
+            if (incoming.length === 0) return;
+            const newFiles: PyFile[] = incoming.map((f, i) => ({
+                id: `agent_${Date.now()}_${i}`,
+                name: f.name,
+                code: f.code,
+            }));
+            setFiles(newFiles);
+            setActiveId(newFiles[newFiles.length - 1].id);
+        },
+        getProjectFiles: () => files.map(f => ({ name: f.name, code: f.code })),
+    }), [activeId, files]);
 
     const addFile = () => {
         const nf: PyFile = { id: `f${Date.now()}`, name: `file${files.length + 1}.py`, code: "" };
@@ -786,7 +814,7 @@ export const PythonRunner: React.FC<PythonRunnerProps> = ({ initialCode = "", in
 
             // Build stdin queue from the textarea (one value per line)
             const stdinLines = stdinText.split("\n");
-            const stdinJson  = JSON.stringify(stdinLines);
+            const stdinJson = JSON.stringify(stdinLines);
 
             const userCode = JSON.stringify(activeFile.code);
             const userName = JSON.stringify(activeFile.name);
@@ -833,7 +861,7 @@ export const PythonRunner: React.FC<PythonRunnerProps> = ({ initialCode = "", in
                 try {
                     const figJson = String(
                         (await py.runPythonAsync(
-`import json as _jc, io as _ic, base64 as _bc
+                            `import json as _jc, io as _ic, base64 as _bc
 try:
     import matplotlib.pyplot as _pc
     _ns = _pc.get_fignums()
@@ -890,16 +918,16 @@ _jc.dumps(_imgs)`
     /* ── Container style ──────────────────────────────────────────── */
     const wrapStyle: React.CSSProperties = {
         width: "100%",
-        height: isFullscreen ? "calc(100vh - 28px)" : isNotebook ? "max(600px, 80vh)" : isNarrow ? "520px" : "540px",
+        height: fillHeight ? "100%" : isFullscreen ? "calc(100vh - 28px)" : isNotebook ? "max(600px, 80vh)" : isNarrow ? "520px" : "540px",
         position: isFullscreen ? "fixed" : "relative",
         ...(isFullscreen && { top: 14, left: 14, right: 14, bottom: 14, zIndex: 50 }),
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
-        borderRadius: 12,
-        border: "1px solid #313244",
-        boxShadow: isFullscreen ? "0 28px 60px rgba(0,0,0,.45)" : "0 4px 18px rgba(0,0,0,.18)",
-        margin: "16px 0",
+        borderRadius: fillHeight ? 0 : 12,
+        border: fillHeight ? "none" : "1px solid #313244",
+        boxShadow: (fillHeight || isFullscreen) ? "none" : "0 4px 18px rgba(0,0,0,.18)",
+        margin: fillHeight ? 0 : "16px 0",
         background: "#1e1e2e",
     };
 
@@ -1039,91 +1067,91 @@ _jc.dumps(_imgs)`
                     />
                 ) : (<>
 
-                {/* ── CODE EDITOR ────────────────────────────────── */}
-                <div style={{ flex: isNarrow ? "1 1 55%" : "1.2 1 0", display: "flex", flexDirection: "column", borderRight: isNarrow ? "none" : "1px solid #313244", borderBottom: isNarrow ? "1px solid #313244" : "none", minWidth: 0, minHeight: 0 }}>
-                    <div style={{ padding: "3px 12px", background: "#181825", borderBottom: "1px solid #313244", fontSize: 10, color: "#6c7086", fontFamily: "monospace", display: "flex", justifyContent: "space-between", flexShrink: 0, overflow: "hidden" }}>
-                        <span style={{ color: "#89b4fa", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{activeFile.name}</span>
-                        {!isNarrow && <span style={{ flexShrink: 0, paddingLeft: 8 }}>Ctrl+Enter chạy · Tab = 4 spaces</span>}
-                    </div>
-                    <CodeEditor
-                        value={activeFile.code}
-                        onChange={updateCode}
-                        onRun={runCode}
-                    />
-                </div>
-
-                {/* ── OUTPUT PANEL ───────────────────────────────── */}
-                <div style={{ flex: isNarrow ? "1 1 45%" : "1 1 0", display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0, background: "#181825" }}>
-                    <div style={{ padding: "3px 12px", background: "#181825", borderBottom: "1px solid #313244", fontSize: 10, color: "#6c7086", fontFamily: "monospace", display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                        <Terminal size={10} color="#89b4fa" />
-                        <span style={{ color: "#89b4fa" }}>Output</span>
-                    </div>
-                    <div style={{ flex: 1, overflowY: "auto", padding: "10px 14px", fontFamily: "'JetBrains Mono',Consolas,monospace", fontSize: 12.5, lineHeight: 1.75 }}>
-                        {output.length === 0 && (
-                            <span style={{ color: "#45475a", fontSize: 11 }}>
-                                Nhấn <b style={{ color: "#a6e3a1" }}>▶ Chạy</b> để thực thi code
-                            </span>
-                        )}
-                        {output.map((line, i) =>
-                            line.type === "image" ? (
-                                <img key={i} src={`data:image/png;base64,${line.text}`}
-                                    style={{ maxWidth: "100%", margin: "8px 0", borderRadius: 6, display: "block" }} />
-                            ) : (
-                                <pre key={i} style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", marginBottom: 2, color: line.type === "stderr" ? "#f38ba8" : line.type === "result" ? "#fab387" : line.type === "info" ? "#6c7086" : "#a6e3a1" }}>
-                                    {line.text}
-                                </pre>
-                            )
-                        )}
-                        <div ref={outputEndRef} />
-                    </div>
-
-                    {/* ── STDIN RESIZE HANDLE ── */}
-                    <div
-                        onMouseDown={e => {
-                            dragStdin.current = { startY: e.clientY, startH: stdinHeight };
-                            document.body.style.cursor = "ns-resize";
-                            document.body.style.userSelect = "none";
-                        }}
-                        title="Kéo để thay đổi kích thước STDIN"
-                        style={{ height: 6, flexShrink: 0, cursor: "ns-resize", background: "#181825", display: "flex", alignItems: "center", justifyContent: "center", borderTop: `1px solid ${hasInput ? "#45475a" : "#313244"}` }}
-                    >
-                        <div style={{ width: 36, height: 3, borderRadius: 2, background: "#45475a" }} />
-                    </div>
-
-                    {/* ── STDIN PANEL ── always show when input() detected, collapsible otherwise ── */}
-                    <div style={{ flexShrink: 0, background: "#11111b" }}>
-                        {/* header row */}
-                        <div
-                            onClick={() => setStdinOpen(o => !o)}
-                            style={{ padding: "4px 10px", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, userSelect: "none" }}
-                        >
-                            <span style={{ fontSize: 10 }}>📥</span>
-                            <span style={{ fontSize: 10, fontWeight: 600, color: hasInput ? "#f9e2af" : "#45475a", fontFamily: "monospace", letterSpacing: "0.04em" }}>
-                                STDIN {hasInput ? <span style={{ fontSize: 9, background: "#313244", padding: "1px 5px", borderRadius: 3, color: "#cba6f7" }}>input() được phát hiện</span> : ""}
-                            </span>
-                            <span style={{ marginLeft: "auto", color: "#45475a" }}>
-                                {stdinOpen ? <ChevronDown size={11} /> : <ChevronUp size={11} />}
-                            </span>
+                    {/* ── CODE EDITOR ────────────────────────────────── */}
+                    <div style={{ flex: isNarrow ? "1 1 55%" : "1.2 1 0", display: "flex", flexDirection: "column", borderRight: isNarrow ? "none" : "1px solid #313244", borderBottom: isNarrow ? "1px solid #313244" : "none", minWidth: 0, minHeight: 0 }}>
+                        <div style={{ padding: "3px 12px", background: "#181825", borderBottom: "1px solid #313244", fontSize: 10, color: "#6c7086", fontFamily: "monospace", display: "flex", justifyContent: "space-between", flexShrink: 0, overflow: "hidden" }}>
+                            <span style={{ color: "#89b4fa", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{activeFile.name}</span>
+                            {!isNarrow && <span style={{ flexShrink: 0, paddingLeft: 8 }}>Ctrl+Enter chạy · Tab = 4 spaces</span>}
                         </div>
-                        {stdinOpen && (
-                            <>
-                                <div style={{ padding: "0 10px 4px", fontSize: 9, color: "#45475a", fontFamily: "monospace" }}>
-                                    Mỗi dòng = 1 lần gọi input() · Để trống nếu không cần
-                                </div>
-                                <style>{`.py-stdin::placeholder{color:#313244}.py-stdin:focus{outline:none}.py-stdin::-webkit-scrollbar{width:4px}.py-stdin::-webkit-scrollbar-thumb{background:#313244;border-radius:2px}`}</style>
-                                <textarea
-                                    ref={stdinRef}
-                                    className="py-stdin"
-                                    value={stdinText}
-                                    onChange={e => setStdinText(e.target.value)}
-                                    placeholder={"Alice\n25\nHà Nội"}
-                                    spellCheck={false}
-                                    style={{ width: "100%", height: stdinHeight, resize: "none", background: "#1e1e2e", color: "#cdd6f4", fontFamily: "'JetBrains Mono',Consolas,monospace", fontSize: 12, lineHeight: 1.6, padding: "6px 10px", border: "none", borderTop: "1px solid #313244", boxSizing: "border-box" }}
-                                />
-                            </>
-                        )}
+                        <CodeEditor
+                            value={activeFile.code}
+                            onChange={updateCode}
+                            onRun={runCode}
+                        />
                     </div>
-                </div>
+
+                    {/* ── OUTPUT PANEL ───────────────────────────────── */}
+                    <div style={{ flex: isNarrow ? "1 1 45%" : "1 1 0", display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0, background: "#181825" }}>
+                        <div style={{ padding: "3px 12px", background: "#181825", borderBottom: "1px solid #313244", fontSize: 10, color: "#6c7086", fontFamily: "monospace", display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                            <Terminal size={10} color="#89b4fa" />
+                            <span style={{ color: "#89b4fa" }}>Output</span>
+                        </div>
+                        <div style={{ flex: 1, overflowY: "auto", padding: "10px 14px", fontFamily: "'JetBrains Mono',Consolas,monospace", fontSize: 12.5, lineHeight: 1.75 }}>
+                            {output.length === 0 && (
+                                <span style={{ color: "#45475a", fontSize: 11 }}>
+                                    Nhấn <b style={{ color: "#a6e3a1" }}>▶ Chạy</b> để thực thi code
+                                </span>
+                            )}
+                            {output.map((line, i) =>
+                                line.type === "image" ? (
+                                    <img key={i} src={`data:image/png;base64,${line.text}`}
+                                        style={{ maxWidth: "100%", margin: "8px 0", borderRadius: 6, display: "block" }} />
+                                ) : (
+                                    <pre key={i} style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", marginBottom: 2, color: line.type === "stderr" ? "#f38ba8" : line.type === "result" ? "#fab387" : line.type === "info" ? "#6c7086" : "#a6e3a1" }}>
+                                        {line.text}
+                                    </pre>
+                                )
+                            )}
+                            <div ref={outputEndRef} />
+                        </div>
+
+                        {/* ── STDIN RESIZE HANDLE ── */}
+                        <div
+                            onMouseDown={e => {
+                                dragStdin.current = { startY: e.clientY, startH: stdinHeight };
+                                document.body.style.cursor = "ns-resize";
+                                document.body.style.userSelect = "none";
+                            }}
+                            title="Kéo để thay đổi kích thước STDIN"
+                            style={{ height: 6, flexShrink: 0, cursor: "ns-resize", background: "#181825", display: "flex", alignItems: "center", justifyContent: "center", borderTop: `1px solid ${hasInput ? "#45475a" : "#313244"}` }}
+                        >
+                            <div style={{ width: 36, height: 3, borderRadius: 2, background: "#45475a" }} />
+                        </div>
+
+                        {/* ── STDIN PANEL ── always show when input() detected, collapsible otherwise ── */}
+                        <div style={{ flexShrink: 0, background: "#11111b" }}>
+                            {/* header row */}
+                            <div
+                                onClick={() => setStdinOpen(o => !o)}
+                                style={{ padding: "4px 10px", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, userSelect: "none" }}
+                            >
+                                <span style={{ fontSize: 10 }}>📥</span>
+                                <span style={{ fontSize: 10, fontWeight: 600, color: hasInput ? "#f9e2af" : "#45475a", fontFamily: "monospace", letterSpacing: "0.04em" }}>
+                                    STDIN {hasInput ? <span style={{ fontSize: 9, background: "#313244", padding: "1px 5px", borderRadius: 3, color: "#cba6f7" }}>input() được phát hiện</span> : ""}
+                                </span>
+                                <span style={{ marginLeft: "auto", color: "#45475a" }}>
+                                    {stdinOpen ? <ChevronDown size={11} /> : <ChevronUp size={11} />}
+                                </span>
+                            </div>
+                            {stdinOpen && (
+                                <>
+                                    <div style={{ padding: "0 10px 4px", fontSize: 9, color: "#45475a", fontFamily: "monospace" }}>
+                                        Mỗi dòng = 1 lần gọi input() · Để trống nếu không cần
+                                    </div>
+                                    <style>{`.py-stdin::placeholder{color:#313244}.py-stdin:focus{outline:none}.py-stdin::-webkit-scrollbar{width:4px}.py-stdin::-webkit-scrollbar-thumb{background:#313244;border-radius:2px}`}</style>
+                                    <textarea
+                                        ref={stdinRef}
+                                        className="py-stdin"
+                                        value={stdinText}
+                                        onChange={e => setStdinText(e.target.value)}
+                                        placeholder={"Alice\n25\nHà Nội"}
+                                        spellCheck={false}
+                                        style={{ width: "100%", height: stdinHeight, resize: "none", background: "#1e1e2e", color: "#cdd6f4", fontFamily: "'JetBrains Mono',Consolas,monospace", fontSize: 12, lineHeight: 1.6, padding: "6px 10px", border: "none", borderTop: "1px solid #313244", boxSizing: "border-box" }}
+                                    />
+                                </>
+                            )}
+                        </div>
+                    </div>
                 </>)}
             </div>
 
@@ -1140,4 +1168,6 @@ _jc.dumps(_imgs)`
             )}
         </div>
     );
-};
+    }
+);
+PythonRunner.displayName = "PythonRunner";

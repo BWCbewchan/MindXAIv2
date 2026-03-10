@@ -5,7 +5,8 @@ import { ChatSidebar } from "@/components/chat/chat-sidebar";
 import { ChatWindow } from "@/components/chat/chat-window";
 import { SettingsModal } from "@/components/chat/settings-modal";
 import { useChatStore } from "@/store/chat-store";
-import { Menu, PanelLeftOpen } from "lucide-react";
+import { BookOpen, Code2, Menu, PanelLeftOpen } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export default function ChatPage() {
@@ -27,6 +28,7 @@ export default function ChatPage() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [settingsTab, setSettingsTab] = useState<string | undefined>(undefined);
 
     // Initial load
     useEffect(() => {
@@ -82,7 +84,13 @@ export default function ChatPage() {
                     <div className="flex-1 text-center font-display font-bold text-gray-800">
                         Sparky AI
                     </div>
-                    <div className="w-10"></div>
+                    <Link
+                        href="/ide"
+                        className="flex items-center gap-1 px-3 py-1.5 bg-violet-50 border border-violet-200 rounded-xl text-violet-600 text-xs font-semibold hover:bg-violet-100 transition-colors"
+                    >
+                        <Code2 size={14} />
+                        IDE
+                    </Link>
                 </div>
 
                 {/* Desktop expand button — visible only when sidebar is collapsed */}
@@ -96,6 +104,26 @@ export default function ChatPage() {
                     </button>
                 )}
 
+                {/* Desktop IDE button — top-right */}
+                <Link
+                    href="/ide"
+                    className="hidden md:flex absolute top-3 right-4 z-20 items-center gap-1.5 px-3 py-1.5 bg-white border border-violet-200 rounded-xl shadow-sm text-violet-600 hover:bg-violet-50 hover:border-violet-400 transition-all text-xs font-semibold"
+                    title="Mở IDE"
+                >
+                    <Code2 size={14} />
+                    IDE
+                </Link>
+
+                {/* Desktop Help button */}
+                <button
+                    onClick={() => { setSettingsTab("guide"); setIsSettingsOpen(true); }}
+                    className="hidden md:flex absolute top-3 right-20 z-20 items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-xl shadow-sm text-gray-500 hover:bg-gray-50 hover:border-gray-400 transition-all text-xs font-semibold"
+                    title="Hướng dẫn sử dụng"
+                >
+                    <BookOpen size={14} />
+                    Hướng dẫn
+                </button>
+
                 <ChatWindow />
 
                 <ChatInput
@@ -107,7 +135,8 @@ export default function ChatPage() {
             {/* Settings Modal */}
             <SettingsModal
                 isOpen={isSettingsOpen}
-                onClose={() => setIsSettingsOpen(false)}
+                onClose={() => { setIsSettingsOpen(false); setSettingsTab(undefined); }}
+                initialTab={settingsTab}
             />
         </div>
     );
